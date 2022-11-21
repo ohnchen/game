@@ -1,1 +1,1 @@
-# Game: Building a logical gatter sim.
+# Game: Building a logic gate sim.
