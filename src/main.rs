@@ -6,6 +6,7 @@ use sdl2::rect::{Point, Rect};
 use sdl2::render::{Texture, WindowCanvas};
 use std::time::Duration;
 
+// [TODO] rewrite || add function for rendering multiple elements
 fn render(
     canvas: &mut WindowCanvas,
     texture: &Texture,
@@ -43,7 +44,7 @@ fn main() -> Result<(), String> {
     let _image_context = image::init(InitFlag::PNG | InitFlag::JPG)?;
 
     let window = video_subsystem
-        .window("game", 800, 600)
+        .window("game", 1280, 720)
         .position_centered()
         .build()
         .expect("could not initialize video subsystem");
@@ -53,12 +54,14 @@ fn main() -> Result<(), String> {
         .build()
         .expect("could not make a canvas");
 
+    // [TODO] load in multiple textures
     let texture_creator = canvas.texture_creator();
     let texture = texture_creator.load_texture("assets/mail.png")?;
 
     let (width, height) = canvas.output_size()?;
-    let mut position = Point::new(width as i32 / 2, height as i32 / 2);
 
+    // [TODO] create multiple objects
+    let mut position = Point::new(width as i32 / 2, height as i32 / 2);
     let sprite = Rect::new(0, 0, 64, 64);
 
     canvas.set_draw_color(Color::RGB(42, 53, 77));
@@ -84,6 +87,7 @@ fn main() -> Result<(), String> {
                     mouse_btn: sdl2::mouse::MouseButton::Left,
                     ..
                 } => {
+                    // [TODO] use slice of positions and dimensions as input
                     if match_mouse_pos(mouse_pos_x, mouse_pos_y, position.x(), position.y(), 64, 64)
                     {
                         hit = true;
