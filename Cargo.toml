@@ -1,0 +1,13 @@
+[package]
+name = "game"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[dependencies.sdl2]
+features = ["image"]
+version = "0.35.2"
+
+
+
