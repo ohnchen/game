@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 
 [dependencies.sdl2]
-features = ["image"]
+features = ["image", "gfx"]
 version = "0.35.2"
 
 
