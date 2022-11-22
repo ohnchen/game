@@ -16,7 +16,7 @@ fn render(
     canvas.clear();
 
     for i in 0..positions.len() {
-        render_sprite(canvas, textures[0], positions[i], sprites[0])?;
+        render_sprite(canvas, textures[i], positions[i], sprites[i])?;
     }
 
     canvas.present();
@@ -75,15 +75,17 @@ fn main() -> Result<(), String> {
     // [TODO] load in multiple textures
     let texture_creator = canvas.texture_creator();
     let texture = texture_creator.load_texture("assets/mail.png")?;
+    let texture1 = texture_creator.load_texture("assets/reaper.png")?;
 
     let (width, height) = canvas.output_size()?;
 
     // [TODO] create multiple objects
-    let mut position = Point::new(width as i32 / 2, height as i32 / 2);
+    let position = Point::new(width as i32 / 2, height as i32 / 2);
     let position_1 = Point::new(100, 100);
+
     let sprite = Rect::new(0, 0, 64, 64);
 
-    let textures = [&texture, &texture];
+    let textures = [&texture, &texture1];
     let mut positions = [position, position_1];
     let sprites = [sprite, sprite];
 
@@ -92,12 +94,11 @@ fn main() -> Result<(), String> {
 
     let mut event_pump = sdl_context.event_pump()?;
     let mut hit = false;
-    let mut moved = 0;
+    let mut moved = usize::MAX;
     'running: loop {
         let mouse_pos_x = event_pump.mouse_state().x();
         let mouse_pos_y = event_pump.mouse_state().y();
 
-        // Handle events
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
@@ -111,7 +112,7 @@ fn main() -> Result<(), String> {
                     mouse_btn: sdl2::mouse::MouseButton::Left,
                     ..
                 } => {
-                    // [TODO] use slice of positions and dimensions as input
+                    // [TODO] use dimensions as input
                     let (is_hit, element) =
                         match_mouse_pos(mouse_pos_x, mouse_pos_y, &positions, 64, 64);
                     if is_hit {
