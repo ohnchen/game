@@ -9,16 +9,29 @@ use std::time::Duration;
 // [TODO] rewrite || add function for rendering multiple elements
 fn render(
     canvas: &mut WindowCanvas,
+    textures: &[&Texture],
+    positions: &[Point],
+    sprites: &[Rect],
+) -> Result<(), String> {
+    canvas.clear();
+
+    for i in 0..positions.len() {
+        render_sprite(canvas, textures[0], positions[i], sprites[0])?;
+    }
+
+    canvas.present();
+
+    Ok(())
+}
+
+fn render_sprite(
+    canvas: &mut WindowCanvas,
     texture: &Texture,
     position: Point,
     sprite: Rect,
 ) -> Result<(), String> {
-    canvas.clear();
-
     let screen_rect = Rect::from_center(position, sprite.width(), sprite.height());
-
     canvas.copy(texture, sprite, screen_rect)?;
-    canvas.present();
 
     Ok(())
 }
@@ -26,15 +39,20 @@ fn render(
 fn match_mouse_pos(
     mouse_pos_x: i32,
     mouse_pos_y: i32,
-    x: i32,
-    y: i32,
+    positions: &[Point],
     width: i32,
     height: i32,
-) -> bool {
-    mouse_pos_x > x - height / 2
-        && mouse_pos_x < x + height / 2
-        && mouse_pos_y > y - width / 2
-        && mouse_pos_y < y + width / 2
+) -> (bool, usize) {
+    for pos in positions.iter() {
+        if mouse_pos_x > pos.x() - height / 2
+            && mouse_pos_x < pos.x() + height / 2
+            && mouse_pos_y > pos.y() - width / 2
+            && mouse_pos_y < pos.y() + width / 2
+        {
+            return (true, positions.iter().position(|&x| x == *pos).unwrap());
+        }
+    }
+    (false, usize::MAX)
 }
 
 fn main() -> Result<(), String> {
@@ -62,13 +80,19 @@ fn main() -> Result<(), String> {
 
     // [TODO] create multiple objects
     let mut position = Point::new(width as i32 / 2, height as i32 / 2);
+    let position_1 = Point::new(100, 100);
     let sprite = Rect::new(0, 0, 64, 64);
+
+    let textures = [&texture, &texture];
+    let mut positions = [position, position_1];
+    let sprites = [sprite, sprite];
 
     canvas.set_draw_color(Color::RGB(42, 53, 77));
     canvas.clear();
 
     let mut event_pump = sdl_context.event_pump()?;
     let mut hit = false;
+    let mut moved = 0;
     'running: loop {
         let mouse_pos_x = event_pump.mouse_state().x();
         let mouse_pos_y = event_pump.mouse_state().y();
@@ -88,9 +112,11 @@ fn main() -> Result<(), String> {
                     ..
                 } => {
                     // [TODO] use slice of positions and dimensions as input
-                    if match_mouse_pos(mouse_pos_x, mouse_pos_y, position.x(), position.y(), 64, 64)
-                    {
+                    let (is_hit, element) =
+                        match_mouse_pos(mouse_pos_x, mouse_pos_y, &positions, 64, 64);
+                    if is_hit {
                         hit = true;
+                        moved = element;
                     }
                 }
                 Event::MouseButtonUp {
@@ -104,10 +130,10 @@ fn main() -> Result<(), String> {
         }
 
         if hit {
-            position = Point::new(mouse_pos_x, mouse_pos_y);
+            positions[moved] = Point::new(mouse_pos_x, mouse_pos_y);
         }
 
-        render(&mut canvas, &texture, position, sprite)?;
+        render(&mut canvas, &textures, &positions, &sprites)?;
 
         // Time management!
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
