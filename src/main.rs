@@ -91,7 +91,6 @@ fn main() -> Result<(), String> {
                                 64,
                             );
                             if is_hit {
-                                // change positions of lines that are connected to thits
                                 moved_new = true;
                                 positions.push(Point::new(mouse_pos_x, mouse_pos_y));
                                 textures.push(textures_menuitems[element]);
@@ -199,7 +198,28 @@ fn main() -> Result<(), String> {
         }
 
         if moved_old {
+            let indices_start: Vec<usize> = cables
+                .iter()
+                .enumerate()
+                .filter(|(_, &x)| x.0 == positions[moved_old_index])
+                .map(|(index, _)| index)
+                .collect();
+
+            let indices_end: Vec<usize> = cables
+                .iter()
+                .enumerate()
+                .filter(|(_, &x)| x.1 == positions[moved_old_index])
+                .map(|(index, _)| index)
+                .collect();
+
             positions[moved_old_index] = Point::new(mouse_pos_x, mouse_pos_y);
+
+            for index in indices_start {
+                cables[index].0 = Point::new(mouse_pos_x, mouse_pos_y);
+            }
+            for index in indices_end {
+                cables[index].1 = Point::new(mouse_pos_x, mouse_pos_y);
+            }
         }
 
         drawing::render(
@@ -210,7 +230,6 @@ fn main() -> Result<(), String> {
             &positions,
             &cables,
             sprite,
-            //text,
             mode,
         )?;
 
