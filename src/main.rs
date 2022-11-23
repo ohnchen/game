@@ -1,93 +1,20 @@
+mod drawing;
+
 use sdl2::event::Event;
-use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::image::{self, InitFlag, LoadTexture};
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
-use sdl2::render::{Texture, WindowCanvas};
 use std::time::Duration;
 
-pub const BACKGROUND: Color = Color::RGB(42, 53, 77);
+pub const EERIE_BLACK: Color = Color::RGB(19, 21, 21);
+pub const JET: Color = Color::RGB(43, 44, 40);
+pub const PERSIAN_GREEN: Color = Color::RGB(51, 153, 137);
+pub const MIDDLE_BLUE_GREEN: Color = Color::RGB(125, 226, 209);
+pub const SNOW: Color = Color::RGB(255, 250, 251);
+
 pub const SPRITE_HEIGHT: u32 = 64;
 pub const SPRITE_WIDTH: u32 = 64;
-
-fn redraw_screen(canvas: &mut WindowCanvas) -> Result<(), String> {
-    canvas.clear();
-
-    let (width, height) = canvas.output_size()?;
-    canvas.line(
-        0,
-        height as i16 - SPRITE_HEIGHT as i16,
-        width as i16,
-        height as i16 - SPRITE_HEIGHT as i16,
-        Color::WHITE,
-    )?;
-
-    canvas.set_draw_color(BACKGROUND);
-
-    Ok(())
-}
-
-fn render(
-    canvas: &mut WindowCanvas,
-    textures_menuitems: &[&Texture],
-    textures: &[&Texture],
-    positions_menuitems: &[Point],
-    positions: &[Point],
-    sprite: Rect,
-) -> Result<(), String> {
-    redraw_screen(canvas)?;
-
-    for i in 0..positions_menuitems.len() {
-        render_sprite(
-            canvas,
-            textures_menuitems[i],
-            positions_menuitems[i],
-            sprite,
-        )?;
-    }
-
-    for j in 0..positions.len() {
-        render_sprite(canvas, textures[j], positions[j], sprite)?;
-    }
-    canvas.present();
-    Ok(())
-
-    // drawing experiments
-    // for pixels to work I could use a grid via % operator and
-    //canvas.pixel(100, 100, Color::WHITE)?;
-}
-
-fn render_sprite(
-    canvas: &mut WindowCanvas,
-    texture: &Texture,
-    position: Point,
-    sprite: Rect,
-) -> Result<(), String> {
-    let screen_rect = Rect::from_center(position, sprite.width(), sprite.height());
-    canvas.copy(texture, sprite, screen_rect)?;
-
-    Ok(())
-}
-
-fn match_mouse_pos(
-    mouse_pos_x: i32,
-    mouse_pos_y: i32,
-    positions: &[Point],
-    width: i32,
-    height: i32,
-) -> (bool, usize) {
-    for pos in positions.iter() {
-        if mouse_pos_x > pos.x() - height / 2
-            && mouse_pos_x < pos.x() + height / 2
-            && mouse_pos_y > pos.y() - width / 2
-            && mouse_pos_y < pos.y() + width / 2
-        {
-            return (true, positions.iter().position(|&x| x == *pos).unwrap());
-        }
-    }
-    (false, usize::MAX)
-}
 
 fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
@@ -96,7 +23,7 @@ fn main() -> Result<(), String> {
     let _image_context = image::init(InitFlag::PNG | InitFlag::JPG)?;
 
     let window = video_subsystem
-        .window("game", 1280, 720)
+        .window("Logical Gates Simulator - ohnchen", 1280, 720)
         .position_centered()
         .build()
         .expect("could not initialize video subsystem");
@@ -106,6 +33,7 @@ fn main() -> Result<(), String> {
         .build()
         .expect("could not make a canvas");
 
+    let mut mode: drawing::Mode = drawing::Mode::Visual;
     let (_, height) = canvas.output_size()?;
 
     let sprite = Rect::new(0, 0, SPRITE_HEIGHT, SPRITE_WIDTH);
@@ -115,11 +43,7 @@ fn main() -> Result<(), String> {
     let placeholder2 = texture_creator.load_texture("assets/placeholder2.png")?;
 
     let mut textures = Vec::new();
-    let mut textures_menuitems = Vec::new();
-    //for _ in 0..2 {
-    textures_menuitems.push(&placeholder);
-    textures_menuitems.push(&placeholder2);
-    //}
+    let textures_menuitems = vec![&placeholder, &placeholder2];
 
     let mut positions = Vec::new();
     let mut positions_menuitems = Vec::new();
@@ -127,11 +51,18 @@ fn main() -> Result<(), String> {
         positions_menuitems.push(Point::new(i as i32 * 64 + 32, height as i32 - 32));
     }
 
-    canvas.set_draw_color(BACKGROUND);
+    let mut cables = Vec::new();
+
+    canvas.set_draw_color(EERIE_BLACK);
     canvas.clear();
 
     let mut event_pump = sdl_context.event_pump()?;
-    let mut hit = false;
+    let mut moved_new = false;
+    let mut moved_old = false;
+    let mut moved_old_index: usize = usize::MAX;
+
+    let mut start_point_cable: Point = Point::new(0, 0);
+    let mut end_point_cable: Point;
 
     'running: loop {
         let mouse_pos_x = event_pump.mouse_state().x();
@@ -149,37 +80,138 @@ fn main() -> Result<(), String> {
                 Event::MouseButtonDown {
                     mouse_btn: sdl2::mouse::MouseButton::Left,
                     ..
-                } => {
-                    let (is_hit, element) =
-                        match_mouse_pos(mouse_pos_x, mouse_pos_y, &positions_menuitems, 64, 64);
-                    if is_hit {
-                        hit = true;
-                        positions.push(Point::new(mouse_pos_x, mouse_pos_y));
-                        textures.push(textures_menuitems[element]);
+                } => match mode {
+                    drawing::Mode::Visual => {
+                        if mouse_pos_y > height as i32 - 64 {
+                            let (is_hit, element) = drawing::match_mouse_pos(
+                                mouse_pos_x,
+                                mouse_pos_y,
+                                &positions_menuitems,
+                                64,
+                                64,
+                            );
+                            if is_hit {
+                                // change positions of lines that are connected to thits
+                                moved_new = true;
+                                positions.push(Point::new(mouse_pos_x, mouse_pos_y));
+                                textures.push(textures_menuitems[element]);
+                            }
+                        } else {
+                            let (is_hit, element) = drawing::match_mouse_pos(
+                                mouse_pos_x,
+                                mouse_pos_y,
+                                &positions,
+                                64,
+                                64,
+                            );
+                            if is_hit {
+                                moved_old = true;
+                                moved_old_index = element;
+                            }
+                        }
                     }
-                }
+                    drawing::Mode::Insert => {
+                        let (is_hit, element) =
+                            drawing::match_mouse_pos(mouse_pos_x, mouse_pos_y, &positions, 64, 64);
+                        if is_hit {
+                            start_point_cable = positions[element];
+                        }
+                    }
+                },
                 Event::MouseButtonUp {
                     mouse_btn: sdl2::mouse::MouseButton::Left,
                     ..
+                } =>
+                //[TODO] maybe bug when changing modes while dragging item
+                {
+                    match mode {
+                        drawing::Mode::Visual => {
+                            moved_new = false;
+                            moved_old = false;
+                        }
+                        drawing::Mode::Insert => {
+                            let (is_hit, element) = drawing::match_mouse_pos(
+                                mouse_pos_x,
+                                mouse_pos_y,
+                                &positions,
+                                64,
+                                64,
+                            );
+                            if is_hit {
+                                end_point_cable = positions[element];
+                                if cables.contains(&(start_point_cable, end_point_cable))
+                                    || cables.contains(&(end_point_cable, start_point_cable))
+                                {
+                                    cables.remove(
+                                        cables
+                                            .iter()
+                                            .position(|&x| {
+                                                x == (start_point_cable, end_point_cable)
+                                                    || x == (end_point_cable, start_point_cable)
+                                            })
+                                            .unwrap(),
+                                    );
+                                } else if start_point_cable != end_point_cable {
+                                    cables.push((start_point_cable, end_point_cable));
+                                }
+                            }
+                        }
+                    }
+                }
+                Event::MouseButtonDown {
+                    mouse_btn: sdl2::mouse::MouseButton::Right,
+                    ..
                 } => {
-                    hit = false;
+                    let (is_hit, element) =
+                        drawing::match_mouse_pos(mouse_pos_x, mouse_pos_y, &positions, 64, 64);
+                    if is_hit {
+                        positions.remove(element);
+                        textures.remove(element);
+                    }
+                }
+                Event::MouseButtonUp {
+                    mouse_btn: sdl2::mouse::MouseButton::Middle,
+                    ..
+                } => {
+                    positions.clear();
+                    textures.clear();
+                    cables.clear();
+                }
+                Event::KeyDown {
+                    keycode: Some(Keycode::V),
+                    ..
+                } => {
+                    mode = drawing::Mode::Visual;
+                }
+                Event::KeyDown {
+                    keycode: Some(Keycode::I),
+                    ..
+                } => {
+                    mode = drawing::Mode::Insert;
                 }
                 _ => {}
             }
         }
 
-        if hit {
+        if moved_new {
             let end = positions.len() - 1;
             positions[end] = Point::new(mouse_pos_x, mouse_pos_y);
         }
 
-        render(
+        if moved_old {
+            positions[moved_old_index] = Point::new(mouse_pos_x, mouse_pos_y);
+        }
+
+        drawing::render(
             &mut canvas,
             &textures_menuitems,
             &textures,
             &positions_menuitems,
             &positions,
+            &cables,
             sprite,
+            //text,
+            mode,
         )?;
 
         // Time management!
