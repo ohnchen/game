@@ -141,6 +141,9 @@ fn main() -> Result<(), String> {
         let mouse_pos_x = event_pump.mouse_state().x();
         let mouse_pos_y = event_pump.mouse_state().y();
 
+        let mut input_points = Vec::new();
+        let mut output_points = Vec::new();
+
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
@@ -187,6 +190,8 @@ fn main() -> Result<(), String> {
                             }
                         }
                     }
+                    // [TODO] instead of insert mode - another match_mouse_pos function that looks at
+                    // inputs
                     drawing::Mode::Insert => {
                         let (is_hit, element) = drawing::match_mouse_pos(
                             mouse_pos_x,
@@ -203,19 +208,19 @@ fn main() -> Result<(), String> {
                 Event::MouseButtonUp {
                     mouse_btn: sdl2::mouse::MouseButton::Left,
                     ..
-                } =>
-                //[TODO] maybe bug when changing modes while dragging item
-                {
+                } => {
                     match mode {
                         drawing::Mode::Visual => {
                             moved_new = false;
                             moved_old = false;
                         }
+                        // [TODO] instead of insert mode - another match_mouse_pos function that looks at
+                        // outputs
                         drawing::Mode::Insert => {
                             let (is_hit, element) = drawing::match_mouse_pos(
                                 mouse_pos_x,
                                 mouse_pos_y,
-                                &get_positions(&gates),
+                                &get_positions(&gates), // gates get_input_pos
                                 64,
                                 64,
                             );
@@ -327,14 +332,12 @@ fn main() -> Result<(), String> {
             }
         }
 
-        let mut input_points = Vec::new();
         for v in inputs.values() {
             for point in v {
                 input_points.push(*point);
             }
         }
 
-        let mut output_points = Vec::new();
         for v in outputs.values() {
             for point in v {
                 output_points.push(*point);
