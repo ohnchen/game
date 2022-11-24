@@ -5,6 +5,8 @@ use sdl2::image::{self, InitFlag, LoadTexture};
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
+use sdl2::render::Texture;
+use std::collections::HashMap;
 use std::time::Duration;
 
 pub const EERIE_BLACK: Color = Color::RGB(19, 21, 21);
@@ -15,6 +17,63 @@ pub const SNOW: Color = Color::RGB(255, 250, 251);
 
 pub const SPRITE_HEIGHT: u32 = 64;
 pub const SPRITE_WIDTH: u32 = 64;
+
+pub struct Gate<'a> {
+    position: Point,
+    texture: &'a Texture<'a>,
+    sprite: Rect,
+    inputs: usize,
+    outputs: usize,
+}
+
+impl<'a> Gate<'a> {
+    fn new(
+        position: Point,
+        texture: &'a Texture<'a>,
+        sprite: Rect,
+        inputs: usize,
+        outputs: usize,
+    ) -> Self {
+        Self {
+            position,
+            texture,
+            sprite,
+            inputs,
+            outputs,
+        }
+    }
+
+    fn get_input_pos(&self) -> Vec<Point> {
+        let mut input_pos = Vec::new();
+        for i in 1..self.inputs + 1 {
+            input_pos.push(Point::new(
+                self.position.x() - self.sprite.width() as i32 / 2,
+                self.position.y() as i32 - (self.sprite.height() as i32 / 2)
+                    + i as i32 * (self.sprite.height() as i32 / (self.inputs as i32 + 1)),
+            ));
+        }
+        input_pos
+    }
+
+    fn get_output_pos(&self) -> Vec<Point> {
+        let mut output_pos = Vec::new();
+        for i in 1..self.outputs + 1 {
+            output_pos.push(Point::new(
+                self.position.x() + self.sprite.width() as i32 / 2,
+                self.position.y() as i32 - (self.sprite.height() as i32 / 2)
+                    + i as i32 * (self.sprite.height() as i32 / (self.outputs as i32 + 1)),
+            ));
+        }
+        output_pos
+    }
+}
+
+fn get_positions(gates: &[Gate]) -> Vec<Point> {
+    gates.iter().map(|x| x.position).collect()
+}
+fn get_textures<'a>(gates: &'a [Gate<'a>]) -> Vec<&Texture<'a>> {
+    gates.iter().map(|x| x.texture).collect()
+}
 
 fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
@@ -36,22 +95,36 @@ fn main() -> Result<(), String> {
     let mut mode: drawing::Mode = drawing::Mode::Visual;
     let (_, height) = canvas.output_size()?;
 
-    let sprite = Rect::new(0, 0, SPRITE_HEIGHT, SPRITE_WIDTH);
+    let mut gates: Vec<Gate> = Vec::new();
+    let mut cables: Vec<(Point, Point)> = Vec::new();
+
+    let mut inputs: HashMap<Point, Vec<Point>> = HashMap::new();
+    let mut outputs: HashMap<Point, Vec<Point>> = HashMap::new();
 
     let texture_creator = canvas.texture_creator();
     let placeholder = texture_creator.load_texture("assets/placeholder.png")?;
     let placeholder2 = texture_creator.load_texture("assets/placeholder2.png")?;
 
-    let mut textures = Vec::new();
-    let textures_menuitems = vec![&placeholder, &placeholder2];
+    let normal_rect = Rect::new(0, 0, SPRITE_HEIGHT, SPRITE_WIDTH);
 
-    let mut positions = Vec::new();
-    let mut positions_menuitems = Vec::new();
-    for (i, _) in textures_menuitems.iter().enumerate() {
-        positions_menuitems.push(Point::new(i as i32 * 64 + 32, height as i32 - 32));
-    }
+    let first_gate = Gate::new(
+        Point::new(32, height as i32 - 32),
+        &placeholder,
+        normal_rect,
+        2,
+        1,
+    );
+    let second_gate = Gate::new(
+        Point::new(96, height as i32 - 32),
+        &placeholder2,
+        normal_rect,
+        2,
+        1,
+    );
 
-    let mut cables = Vec::new();
+    // Create lists for the menuitems
+    let positions_menuitems = vec![first_gate.position, second_gate.position];
+    let textures_menuitems = vec![first_gate.texture, second_gate.texture];
 
     canvas.set_draw_color(EERIE_BLACK);
     canvas.clear();
@@ -92,14 +165,19 @@ fn main() -> Result<(), String> {
                             );
                             if is_hit {
                                 moved_new = true;
-                                positions.push(Point::new(mouse_pos_x, mouse_pos_y));
-                                textures.push(textures_menuitems[element]);
+                                gates.push(Gate::new(
+                                    Point::new(mouse_pos_x, mouse_pos_y),
+                                    textures_menuitems[element],
+                                    normal_rect,
+                                    2,
+                                    1,
+                                ));
                             }
                         } else {
                             let (is_hit, element) = drawing::match_mouse_pos(
                                 mouse_pos_x,
                                 mouse_pos_y,
-                                &positions,
+                                &get_positions(&gates),
                                 64,
                                 64,
                             );
@@ -110,10 +188,15 @@ fn main() -> Result<(), String> {
                         }
                     }
                     drawing::Mode::Insert => {
-                        let (is_hit, element) =
-                            drawing::match_mouse_pos(mouse_pos_x, mouse_pos_y, &positions, 64, 64);
+                        let (is_hit, element) = drawing::match_mouse_pos(
+                            mouse_pos_x,
+                            mouse_pos_y,
+                            &get_positions(&gates),
+                            64,
+                            64,
+                        );
                         if is_hit {
-                            start_point_cable = positions[element];
+                            start_point_cable = gates[element].position;
                         }
                     }
                 },
@@ -132,12 +215,12 @@ fn main() -> Result<(), String> {
                             let (is_hit, element) = drawing::match_mouse_pos(
                                 mouse_pos_x,
                                 mouse_pos_y,
-                                &positions,
+                                &get_positions(&gates),
                                 64,
                                 64,
                             );
                             if is_hit {
-                                end_point_cable = positions[element];
+                                end_point_cable = gates[element].position;
                                 if cables.contains(&(start_point_cable, end_point_cable))
                                     || cables.contains(&(end_point_cable, start_point_cable))
                                 {
@@ -161,19 +244,22 @@ fn main() -> Result<(), String> {
                     mouse_btn: sdl2::mouse::MouseButton::Right,
                     ..
                 } => {
-                    let (is_hit, element) =
-                        drawing::match_mouse_pos(mouse_pos_x, mouse_pos_y, &positions, 64, 64);
+                    let (is_hit, element) = drawing::match_mouse_pos(
+                        mouse_pos_x,
+                        mouse_pos_y,
+                        &get_positions(&gates),
+                        64,
+                        64,
+                    );
                     if is_hit {
-                        positions.remove(element);
-                        textures.remove(element);
+                        gates.remove(element);
                     }
                 }
                 Event::MouseButtonUp {
                     mouse_btn: sdl2::mouse::MouseButton::Middle,
                     ..
                 } => {
-                    positions.clear();
-                    textures.clear();
+                    gates.clear();
                     cables.clear();
                 }
                 Event::KeyDown {
@@ -193,26 +279,45 @@ fn main() -> Result<(), String> {
         }
 
         if moved_new {
-            let end = positions.len() - 1;
-            positions[end] = Point::new(mouse_pos_x, mouse_pos_y);
+            let end = get_positions(&gates).len() - 1;
+
+            inputs.remove(&gates[end].position);
+            outputs.remove(&gates[end].position);
+
+            gates[end].position = Point::new(mouse_pos_x, mouse_pos_y);
+
+            inputs.insert(gates[end].position, gates[end].get_input_pos());
+            outputs.insert(gates[end].position, gates[end].get_output_pos());
         }
 
         if moved_old {
             let indices_start: Vec<usize> = cables
                 .iter()
                 .enumerate()
-                .filter(|(_, &x)| x.0 == positions[moved_old_index])
+                .filter(|(_, &x)| x.0 == gates[moved_old_index].position)
                 .map(|(index, _)| index)
                 .collect();
 
             let indices_end: Vec<usize> = cables
                 .iter()
                 .enumerate()
-                .filter(|(_, &x)| x.1 == positions[moved_old_index])
+                .filter(|(_, &x)| x.1 == gates[moved_old_index].position)
                 .map(|(index, _)| index)
                 .collect();
 
-            positions[moved_old_index] = Point::new(mouse_pos_x, mouse_pos_y);
+            inputs.remove(&gates[moved_old_index].position);
+            outputs.remove(&gates[moved_old_index].position);
+
+            gates[moved_old_index].position = Point::new(mouse_pos_x, mouse_pos_y);
+
+            inputs.insert(
+                gates[moved_old_index].position,
+                gates[moved_old_index].get_input_pos(),
+            );
+            outputs.insert(
+                gates[moved_old_index].position,
+                gates[moved_old_index].get_output_pos(),
+            );
 
             for index in indices_start {
                 cables[index].0 = Point::new(mouse_pos_x, mouse_pos_y);
@@ -222,14 +327,30 @@ fn main() -> Result<(), String> {
             }
         }
 
+        let mut input_points = Vec::new();
+        for v in inputs.values() {
+            for point in v {
+                input_points.push(*point);
+            }
+        }
+
+        let mut output_points = Vec::new();
+        for v in outputs.values() {
+            for point in v {
+                output_points.push(*point);
+            }
+        }
+
         drawing::render(
             &mut canvas,
             &textures_menuitems,
-            &textures,
+            &get_textures(&gates),
             &positions_menuitems,
-            &positions,
+            &get_positions(&gates),
             &cables,
-            sprite,
+            &input_points,
+            &output_points,
+            normal_rect,
             mode,
         )?;
 

@@ -21,9 +21,9 @@ pub const SPRITE_SIZE: u32 = 64;
 
 pub const EERIE_BLACK: Color = Color::RGB(19, 21, 21);
 pub const JET: Color = Color::RGB(43, 44, 40);
+//pub const PERSIAN_GREEN: Color = Color::RGB(51, 153, 137);
 pub const MIDDLE_BLUE_GREEN: Color = Color::RGB(125, 226, 209);
 pub const SNOW: Color = Color::RGB(255, 250, 251);
-//pub const PERSIAN_GREEN: Color = Color::RGB(51, 153, 137);
 
 #[allow(clippy::too_many_arguments)]
 pub fn render(
@@ -33,14 +33,15 @@ pub fn render(
     positions_menuitems: &[Point],
     positions: &[Point],
     cables: &[(Point, Point)],
+    inputs: &[Point],
+    outputs: &[Point],
     sprite: Rect,
-    // font: &Texture,
     mode: Mode,
 ) -> Result<(), String> {
     canvas.clear();
 
     for j in 0..positions.len() {
-        render_sprite(canvas, textures[j], positions[j], sprite)?;
+        draw_sprite(canvas, textures[j], positions[j], sprite)?;
     }
 
     for cable in cables.iter() {
@@ -51,12 +52,19 @@ pub fn render(
     draw_menu_background(canvas)?;
 
     for i in 0..positions_menuitems.len() {
-        render_sprite(
+        draw_sprite(
             canvas,
             textures_menuitems[i],
             positions_menuitems[i],
             sprite,
         )?;
+    }
+
+    for input in inputs.iter() {
+        draw_connections(canvas, *input)?;
+    }
+    for output in outputs.iter() {
+        draw_connections(canvas, *output)?;
     }
 
     canvas.present();
@@ -82,6 +90,13 @@ pub fn match_mouse_pos(
     (false, usize::MAX)
 }
 
+fn draw_connections(canvas: &mut WindowCanvas, position: Point) -> Result<(), String> {
+    canvas.filled_circle(position.x() as i16, position.y() as i16, 5, SNOW)?;
+    canvas.set_draw_color(EERIE_BLACK);
+
+    Ok(())
+}
+
 // [TODO] draw better lines
 fn draw_cable(canvas: &mut WindowCanvas, cable: (Point, Point)) -> Result<(), String> {
     canvas.thick_line(
@@ -97,7 +112,6 @@ fn draw_cable(canvas: &mut WindowCanvas, cable: (Point, Point)) -> Result<(), St
     Ok(())
 }
 
-// [TODO] replace with writing text in some way or drawing some other rectangle
 fn draw_active_mode(canvas: &mut WindowCanvas, mode: Mode) -> Result<(), String> {
     canvas.string(10, 10, &mode.to_string(), SNOW)?;
     canvas.set_draw_color(EERIE_BLACK);
@@ -118,7 +132,7 @@ fn draw_menu_background(canvas: &mut WindowCanvas) -> Result<(), String> {
     Ok(())
 }
 
-fn render_sprite(
+fn draw_sprite(
     canvas: &mut WindowCanvas,
     texture: &Texture,
     position: Point,
