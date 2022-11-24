@@ -1,4 +1,9 @@
 mod drawing;
+mod gate;
+mod operations;
+
+use crate::gate::Gate;
+use crate::operations::and_func;
 
 use sdl2::event::Event;
 use sdl2::image::{self, InitFlag, LoadTexture};
@@ -17,56 +22,6 @@ pub const SNOW: Color = Color::RGB(255, 250, 251);
 
 pub const SPRITE_HEIGHT: u32 = 64;
 pub const SPRITE_WIDTH: u32 = 64;
-
-pub struct Gate<'a> {
-    position: Point,
-    texture: &'a Texture<'a>,
-    sprite: Rect,
-    inputs: usize,
-    outputs: usize,
-}
-
-impl<'a> Gate<'a> {
-    fn new(
-        position: Point,
-        texture: &'a Texture<'a>,
-        sprite: Rect,
-        inputs: usize,
-        outputs: usize,
-    ) -> Self {
-        Self {
-            position,
-            texture,
-            sprite,
-            inputs,
-            outputs,
-        }
-    }
-
-    fn get_input_pos(&self) -> Vec<Point> {
-        let mut input_pos = Vec::new();
-        for i in 1..self.inputs + 1 {
-            input_pos.push(Point::new(
-                self.position.x() - self.sprite.width() as i32 / 2,
-                self.position.y() as i32 - (self.sprite.height() as i32 / 2)
-                    + i as i32 * (self.sprite.height() as i32 / (self.inputs as i32 + 1)),
-            ));
-        }
-        input_pos
-    }
-
-    fn get_output_pos(&self) -> Vec<Point> {
-        let mut output_pos = Vec::new();
-        for i in 1..self.outputs + 1 {
-            output_pos.push(Point::new(
-                self.position.x() + self.sprite.width() as i32 / 2,
-                self.position.y() as i32 - (self.sprite.height() as i32 / 2)
-                    + i as i32 * (self.sprite.height() as i32 / (self.outputs as i32 + 1)),
-            ));
-        }
-        output_pos
-    }
-}
 
 fn get_positions(gates: &[Gate]) -> Vec<Point> {
     gates.iter().map(|x| x.position).collect()
@@ -96,35 +51,53 @@ fn main() -> Result<(), String> {
     let (_, height) = canvas.output_size()?;
 
     let mut gates: Vec<Gate> = Vec::new();
-    let mut cables: Vec<(Point, Point)> = Vec::new();
+    let mut cables: Vec<(bool, (Point, Point))> = Vec::new();
 
     let mut inputs: HashMap<Point, Vec<Point>> = HashMap::new();
     let mut outputs: HashMap<Point, Vec<Point>> = HashMap::new();
 
     let texture_creator = canvas.texture_creator();
+    let switch_texture = texture_creator.load_texture("assets/switch_placeholder.png")?;
     let placeholder = texture_creator.load_texture("assets/placeholder.png")?;
     let placeholder2 = texture_creator.load_texture("assets/placeholder2.png")?;
 
     let normal_rect = Rect::new(0, 0, SPRITE_HEIGHT, SPRITE_WIDTH);
 
-    let first_gate = Gate::new(
+    let switch = Gate::new(
         Point::new(32, height as i32 - 32),
+        &switch_texture,
+        normal_rect,
+        2,
+        1,
+        and_func,
+        &[],
+    );
+
+    let first_gate = Gate::new(
+        Point::new(96, height as i32 - 32),
         &placeholder,
         normal_rect,
         2,
         1,
+        and_func,
+        &[],
     );
     let second_gate = Gate::new(
-        Point::new(96, height as i32 - 32),
+        Point::new(160, height as i32 - 32),
         &placeholder2,
         normal_rect,
         2,
         1,
+        and_func,
+        &[],
     );
 
     // Create lists for the menuitems
-    let positions_menuitems = vec![first_gate.position, second_gate.position];
-    let textures_menuitems = vec![first_gate.texture, second_gate.texture];
+    let positions_menuitems = vec![switch.position, first_gate.position, second_gate.position];
+    let textures_menuitems = vec![switch.texture, first_gate.texture, second_gate.texture];
+    let inputs_menuitems = vec![switch.inputs, first_gate.inputs, second_gate.inputs];
+    let outputs_menuitems = vec![switch.outputs, first_gate.outputs, second_gate.outputs];
+    let input_values_menuitems = vec![[false, false], [false, true], [true, true]];
 
     canvas.set_draw_color(EERIE_BLACK);
     canvas.clear();
@@ -136,13 +109,14 @@ fn main() -> Result<(), String> {
 
     let mut start_point_cable: Point = Point::new(0, 0);
     let mut end_point_cable: Point;
+    let mut cable_is_on: bool = false;
+
+    let mut input_points = Vec::new();
+    let mut output_points = Vec::new();
 
     'running: loop {
         let mouse_pos_x = event_pump.mouse_state().x();
         let mouse_pos_y = event_pump.mouse_state().y();
-
-        let mut input_points = Vec::new();
-        let mut output_points = Vec::new();
 
         for event in event_pump.poll_iter() {
             match event {
@@ -172,8 +146,10 @@ fn main() -> Result<(), String> {
                                     Point::new(mouse_pos_x, mouse_pos_y),
                                     textures_menuitems[element],
                                     normal_rect,
-                                    2,
-                                    1,
+                                    inputs_menuitems[element],
+                                    outputs_menuitems[element],
+                                    and_func,
+                                    &input_values_menuitems[element],
                                 ));
                             }
                         } else {
@@ -190,18 +166,19 @@ fn main() -> Result<(), String> {
                             }
                         }
                     }
-                    // [TODO] instead of insert mode - another match_mouse_pos function that looks at
-                    // inputs
                     drawing::Mode::Insert => {
-                        let (is_hit, element) = drawing::match_mouse_pos(
+                        let (is_hit, gate, element) = drawing::match_mouse_pos_con(
                             mouse_pos_x,
                             mouse_pos_y,
-                            &get_positions(&gates),
+                            false,
+                            &gates, // [ ]
                             64,
                             64,
                         );
                         if is_hit {
-                            start_point_cable = gates[element].position;
+                            // [TODO] more than 1 output are not possible
+                            start_point_cable = gates[gate].get_output_pos()[element];
+                            cable_is_on = gates[gate].get_result();
                         }
                     }
                 },
@@ -214,32 +191,33 @@ fn main() -> Result<(), String> {
                             moved_new = false;
                             moved_old = false;
                         }
-                        // [TODO] instead of insert mode - another match_mouse_pos function that looks at
-                        // outputs
                         drawing::Mode::Insert => {
-                            let (is_hit, element) = drawing::match_mouse_pos(
+                            let (is_hit, gate, element) = drawing::match_mouse_pos_con(
                                 mouse_pos_x,
                                 mouse_pos_y,
-                                &get_positions(&gates), // gates get_input_pos
-                                64,
-                                64,
+                                true,
+                                &gates, // [ ]
+                                10,
+                                10,
                             );
                             if is_hit {
-                                end_point_cable = gates[element].position;
-                                if cables.contains(&(start_point_cable, end_point_cable))
-                                    || cables.contains(&(end_point_cable, start_point_cable))
+                                end_point_cable = gates[gate].get_input_pos()[element];
+
+                                if cables.contains(&(true, (start_point_cable, end_point_cable)))
+                                    || cables
+                                        .contains(&(false, (start_point_cable, end_point_cable)))
                                 {
                                     cables.remove(
                                         cables
                                             .iter()
-                                            .position(|&x| {
+                                            .position(|&(_, x)| {
                                                 x == (start_point_cable, end_point_cable)
-                                                    || x == (end_point_cable, start_point_cable)
                                             })
                                             .unwrap(),
                                     );
                                 } else if start_point_cable != end_point_cable {
-                                    cables.push((start_point_cable, end_point_cable));
+                                    cables
+                                        .push((cable_is_on, (start_point_cable, end_point_cable)));
                                 }
                             }
                         }
@@ -296,19 +274,24 @@ fn main() -> Result<(), String> {
         }
 
         if moved_old {
-            let indices_start: Vec<usize> = cables
-                .iter()
-                .enumerate()
-                .filter(|(_, &x)| x.0 == gates[moved_old_index].position)
-                .map(|(index, _)| index)
-                .collect();
+            let mut indices_start: Vec<(usize, usize, usize)> = Vec::new();
+            let mut indices_end: Vec<(usize, usize, usize)> = Vec::new();
 
-            let indices_end: Vec<usize> = cables
-                .iter()
-                .enumerate()
-                .filter(|(_, &x)| x.1 == gates[moved_old_index].position)
-                .map(|(index, _)| index)
-                .collect();
+            for (cable_index, cable) in cables.iter().enumerate() {
+                for (gate_index, gate) in gates.iter().enumerate() {
+                    for (input_index, input_pos) in gate.get_input_pos().iter().enumerate() {
+                        if input_pos.x() == cable.1 .1.x() && input_pos.y() == cable.1 .1.y() {
+                            indices_end.push((cable_index, gate_index, input_index));
+                        }
+                    }
+
+                    for (output_index, output_pos) in gate.get_output_pos().iter().enumerate() {
+                        if output_pos.x() == cable.1 .0.x() && output_pos.y() == cable.1 .0.y() {
+                            indices_start.push((cable_index, gate_index, output_index));
+                        }
+                    }
+                }
+            }
 
             inputs.remove(&gates[moved_old_index].position);
             outputs.remove(&gates[moved_old_index].position);
@@ -324,20 +307,26 @@ fn main() -> Result<(), String> {
                 gates[moved_old_index].get_output_pos(),
             );
 
-            for index in indices_start {
-                cables[index].0 = Point::new(mouse_pos_x, mouse_pos_y);
+            for (cable, gate, index) in indices_start {
+                if gate == moved_old_index {
+                    cables[cable].1 .0 = gates[moved_old_index].get_output_pos()[index];
+                }
             }
-            for index in indices_end {
-                cables[index].1 = Point::new(mouse_pos_x, mouse_pos_y);
+            for (cable, gate, index) in indices_end {
+                if gate == moved_old_index {
+                    cables[cable].1 .1 = gates[moved_old_index].get_input_pos()[index];
+                }
             }
         }
 
+        input_points.clear();
         for v in inputs.values() {
             for point in v {
                 input_points.push(*point);
             }
         }
 
+        output_points.clear();
         for v in outputs.values() {
             for point in v {
                 output_points.push(*point);

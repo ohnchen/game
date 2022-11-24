@@ -1,3 +1,4 @@
+use crate::gate::Gate;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
@@ -32,7 +33,7 @@ pub fn render(
     textures: &[&Texture],
     positions_menuitems: &[Point],
     positions: &[Point],
-    cables: &[(Point, Point)],
+    cables: &[(bool, (Point, Point))],
     inputs: &[Point],
     outputs: &[Point],
     sprite: Rect,
@@ -45,7 +46,7 @@ pub fn render(
     }
 
     for cable in cables.iter() {
-        draw_cable(canvas, *cable)?;
+        draw_cable(canvas, cable.0, cable.1)?;
     }
 
     draw_active_mode(canvas, mode)?;
@@ -90,6 +91,45 @@ pub fn match_mouse_pos(
     (false, usize::MAX)
 }
 
+pub fn match_mouse_pos_con(
+    mouse_pos_x: i32,
+    mouse_pos_y: i32,
+    is_input: bool,
+    gates: &[Gate],
+    width: i32,
+    height: i32,
+) -> (bool, usize, usize) {
+    let mut con_positions: Vec<(usize, Vec<Point>)> = Vec::new();
+
+    if is_input {
+        for (index, gate) in gates.iter().enumerate() {
+            con_positions.push((index, gate.get_input_pos()));
+        }
+    } else {
+        for (index, gate) in gates.iter().enumerate() {
+            con_positions.push((index, gate.get_output_pos()));
+        }
+    }
+
+    for (index, positions) in con_positions.iter() {
+        for pos in positions.iter() {
+            if mouse_pos_x > pos.x() - height / 2
+                && mouse_pos_x < pos.x() + height / 2
+                && mouse_pos_y > pos.y() - width / 2
+                && mouse_pos_y < pos.y() + width / 2
+            {
+                return (
+                    true,
+                    *index,
+                    positions.iter().position(|&x| x == *pos).unwrap(),
+                );
+            }
+        }
+    }
+
+    (false, usize::MAX, usize::MAX)
+}
+
 fn draw_connections(canvas: &mut WindowCanvas, position: Point) -> Result<(), String> {
     canvas.filled_circle(position.x() as i16, position.y() as i16, 5, SNOW)?;
     canvas.set_draw_color(EERIE_BLACK);
@@ -98,14 +138,16 @@ fn draw_connections(canvas: &mut WindowCanvas, position: Point) -> Result<(), St
 }
 
 // [TODO] draw better lines
-fn draw_cable(canvas: &mut WindowCanvas, cable: (Point, Point)) -> Result<(), String> {
+fn draw_cable(canvas: &mut WindowCanvas, state: bool, cable: (Point, Point)) -> Result<(), String> {
+    let color = if state { MIDDLE_BLUE_GREEN } else { JET };
+
     canvas.thick_line(
         cable.0.x() as i16,
         cable.0.y() as i16,
         cable.1.x() as i16,
         cable.1.y() as i16,
         5,
-        MIDDLE_BLUE_GREEN,
+        color,
     )?;
     canvas.set_draw_color(EERIE_BLACK);
 
