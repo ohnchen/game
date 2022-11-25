@@ -2,26 +2,30 @@ use sdl2::rect::{Point, Rect};
 use sdl2::render::Texture;
 
 pub struct Gate<'a> {
+    pub id: i32,
     pub position: Point,
     pub texture: &'a Texture<'a>,
     pub sprite: Rect,
     pub inputs: usize,
     pub outputs: usize,
-    pub comp_func: fn(&[bool]) -> bool,
-    pub input_values: &'a [bool],
+    pub comp_func: fn(u64, usize) -> bool,
+    pub input_values: u64,
 }
 
 impl<'a> Gate<'a> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
+        id: i32,
         position: Point,
         texture: &'a Texture<'a>,
         sprite: Rect,
         inputs: usize,
         outputs: usize,
-        comp_func: fn(&[bool]) -> bool,
-        input_values: &'a [bool],
+        comp_func: fn(u64, usize) -> bool,
+        input_values: u64,
     ) -> Self {
         Self {
+            id,
             position,
             texture,
             sprite,
@@ -57,6 +61,6 @@ impl<'a> Gate<'a> {
     }
 
     pub fn get_result(&self) -> bool {
-        return (self.comp_func)(self.input_values);
+        (self.comp_func)(self.input_values, self.inputs)
     }
 }
