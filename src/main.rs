@@ -323,8 +323,10 @@ fn main() -> Result<(), String> {
                     if is_hit && gates[element].id == 0 {
                         if gates[element].input_values == 1 {
                             gates[element].input_values = 0;
+                            gates[element].texture = &placeholder;
                         } else {
                             gates[element].input_values = 1;
+                            gates[element].texture = &switch_texture;
                         }
                     }
                 }
@@ -385,12 +387,6 @@ fn main() -> Result<(), String> {
             }
         }
 
-        // println!();
-        // for gate in &gates {
-        //     println!("{:b}", gate.input_values);
-        //     println!("result: {}", gate.get_result());
-        // }
-
         for (cable, gate, index) in indices_end {
             if gate == moved_old_index {
                 cables[cable].1 .1 = gates[moved_old_index].get_input_pos()[index];
@@ -398,7 +394,16 @@ fn main() -> Result<(), String> {
             if gates[gate].get_result() != old_cables[cable].0 {
                 gates[gate].input_values ^= 2u64.pow(index as u32);
             }
+
+            if gates[gate].id == 3 {
+                if gates[gate].input_values == 0 {
+                    gates[gate].texture = &placeholder;
+                } else if gates[gate].input_values == 1 {
+                    gates[gate].texture = &switch_texture;
+                }
+            }
         }
+
         input_points.clear();
         for v in inputs.values() {
             for point in v {
