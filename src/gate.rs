@@ -11,7 +11,7 @@ pub enum GateType {
 }
 
 pub struct Gate<'a> {
-    pub id: GateType,
+    pub gatetype: GateType,
     pub position: Point,
     pub texture: &'a Texture<'a>,
     pub sprite: Rect,
@@ -24,7 +24,7 @@ pub struct Gate<'a> {
 impl<'a> Gate<'a> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        id: GateType,
+        gatetype: GateType,
         position: Point,
         texture: &'a Texture<'a>,
         sprite: Rect,
@@ -34,7 +34,7 @@ impl<'a> Gate<'a> {
         input_values: u64,
     ) -> Self {
         Self {
-            id,
+            gatetype,
             position,
             texture,
             sprite,

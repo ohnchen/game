@@ -125,7 +125,7 @@ fn main() -> Result<(), String> {
     );
 
     // Create lists for the menuitems
-    let ids_menuitems = vec![switch.id, and_gate.id, or_gate.id, not.id, lamp.id];
+    let gatetypes_menuitems = vec![switch.gatetype, and_gate.gatetype, or_gate.gatetype, not.gatetype, lamp.gatetype];
     let positions_menuitems = vec![
         switch.position,
         and_gate.position,
@@ -213,7 +213,7 @@ fn main() -> Result<(), String> {
                             if is_hit {
                                 moved_new = true;
                                 gates.push(Gate::new(
-                                    ids_menuitems[element],
+                                    gatetypes_menuitems[element],
                                     Point::new(mouse_pos_x, mouse_pos_y),
                                     textures_menuitems[element],
                                     normal_rect,
@@ -370,7 +370,7 @@ fn main() -> Result<(), String> {
                         64,
                         64,
                     );
-                    if is_hit && gates[element].id == GateType::Switch {
+                    if is_hit && gates[element].gatetype == GateType::Switch {
                         if gates[element].output_is_on() {
                             gates[element].input_values = 0;
                             gates[element].texture = &placeholder;
@@ -458,7 +458,7 @@ fn main() -> Result<(), String> {
                 gates[gate].input_values ^= 2u64.pow(index as u32);
             }
 
-            if gates[gate].id == GateType::Lamp {
+            if gates[gate].gatetype == GateType::Lamp {
                 if gates[gate].output_is_on() {
                     gates[gate].texture = &switch_texture;
                 } else {
