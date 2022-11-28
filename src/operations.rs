@@ -1,3 +1,7 @@
+pub fn switch_lamp_func(inputs: u64, _: usize) -> bool {
+    inputs != 0
+}
+
 pub fn and_func(inputs: u64, num_of_inputs: usize) -> bool {
     let mut temp = 1;
     let inputs_bin = format!("{:b}", inputs);

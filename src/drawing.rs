@@ -1,3 +1,4 @@
+use crate::cable::{Cable, State};
 use crate::gate::Gate;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::Color;
@@ -33,7 +34,7 @@ pub fn render(
     textures: &[&Texture],
     positions_menuitems: &[Point],
     positions: &[Point],
-    cables: &[(bool, (Point, Point))],
+    cables: &[Cable],
     inputs: &[Point],
     outputs: &[Point],
     sprite: Rect,
@@ -46,7 +47,7 @@ pub fn render(
     }
 
     for cable in cables.iter() {
-        draw_cable(canvas, cable.0, cable.1)?;
+        draw_cable(canvas, cable.state, cable.start_point, cable.end_point)?;
     }
 
     draw_active_mode(canvas, mode)?;
@@ -103,11 +104,11 @@ pub fn match_mouse_pos_con(
 
     if is_input {
         for (index, gate) in gates.iter().enumerate() {
-            con_positions.push((index, gate.get_input_pos()));
+            con_positions.push((index, gate.input_positions()));
         }
     } else {
         for (index, gate) in gates.iter().enumerate() {
-            con_positions.push((index, gate.get_output_pos()));
+            con_positions.push((index, gate.output_positions()));
         }
     }
 
@@ -138,14 +139,23 @@ fn draw_connections(canvas: &mut WindowCanvas, position: Point) -> Result<(), St
 }
 
 // [TODO] draw better lines
-fn draw_cable(canvas: &mut WindowCanvas, state: bool, cable: (Point, Point)) -> Result<(), String> {
-    let color = if state { MIDDLE_BLUE_GREEN } else { JET };
+fn draw_cable(
+    canvas: &mut WindowCanvas,
+    state: State,
+    start_point: Point,
+    end_point: Point,
+) -> Result<(), String> {
+    let color = if state == State::On {
+        MIDDLE_BLUE_GREEN
+    } else {
+        JET
+    };
 
     canvas.thick_line(
-        cable.0.x() as i16,
-        cable.0.y() as i16,
-        cable.1.x() as i16,
-        cable.1.y() as i16,
+        start_point.x() as i16,
+        start_point.y() as i16,
+        end_point.x() as i16,
+        end_point.y() as i16,
         5,
         color,
     )?;

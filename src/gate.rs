@@ -1,8 +1,17 @@
 use sdl2::rect::{Point, Rect};
 use sdl2::render::Texture;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum GateType {
+    Switch,
+    And,
+    Or,
+    Not,
+    Lamp,
+}
+
 pub struct Gate<'a> {
-    pub id: i32,
+    pub id: GateType,
     pub position: Point,
     pub texture: &'a Texture<'a>,
     pub sprite: Rect,
@@ -15,7 +24,7 @@ pub struct Gate<'a> {
 impl<'a> Gate<'a> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        id: i32,
+        id: GateType,
         position: Point,
         texture: &'a Texture<'a>,
         sprite: Rect,
@@ -36,7 +45,7 @@ impl<'a> Gate<'a> {
         }
     }
 
-    pub fn get_input_pos(&self) -> Vec<Point> {
+    pub fn input_positions(&self) -> Vec<Point> {
         let mut input_pos = Vec::new();
         for i in 1..self.inputs + 1 {
             input_pos.push(Point::new(
@@ -48,7 +57,7 @@ impl<'a> Gate<'a> {
         input_pos
     }
 
-    pub fn get_output_pos(&self) -> Vec<Point> {
+    pub fn output_positions(&self) -> Vec<Point> {
         let mut output_pos = Vec::new();
         for i in 1..self.outputs + 1 {
             output_pos.push(Point::new(
@@ -60,7 +69,7 @@ impl<'a> Gate<'a> {
         output_pos
     }
 
-    pub fn get_result(&self) -> bool {
+    pub fn output_is_on(&self) -> bool {
         (self.comp_func)(self.input_values, self.inputs)
     }
 }
