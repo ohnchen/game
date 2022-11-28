@@ -1,5 +1,3 @@
-// [TODO] 2 inputs only linked to the first one
-
 pub fn and_func(inputs: u64, num_of_inputs: usize) -> bool {
     let mut temp = 1;
     let inputs_bin = format!("{:b}", inputs);
@@ -24,4 +22,11 @@ pub fn or_func(inputs: u64, _: usize) -> bool {
         return false;
     }
     true
+}
+
+pub fn not_func(inputs: u64, _: usize) -> bool {
+    if inputs == 0 {
+        return true;
+    }
+    false
 }

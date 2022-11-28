@@ -60,10 +60,12 @@ fn main() -> Result<(), String> {
     let switch_texture = texture_creator.load_texture("assets/switch_placeholder.png")?;
     let placeholder = texture_creator.load_texture("assets/placeholder.png")?;
     let placeholder2 = texture_creator.load_texture("assets/placeholder2.png")?;
+    let not_placeholder = texture_creator.load_texture("assets/not_placeholder.png")?;
 
     let normal_rect = Rect::new(0, 0, SPRITE_HEIGHT, SPRITE_WIDTH);
 
     let default_switch_value: u64 = 0b1;
+    let default_lamp_value: u64 = 0b0;
     let default_value: u64 = 0b00;
 
     let switch = Gate::new(
@@ -98,53 +100,70 @@ fn main() -> Result<(), String> {
         default_value,
     );
 
-    let lamp = Gate::new(
+    let not = Gate::new(
         3,
         Point::new(224, height as i32 - 32),
+        &not_placeholder,
+        normal_rect,
+        1,
+        1,
+        not_func,
+        default_value,
+    );
+
+    let lamp = Gate::new(
+        4,
+        Point::new(288, height as i32 - 32),
         &switch_texture,
         normal_rect,
         1,
         0,
         and_func,
-        default_switch_value,
+        default_lamp_value,
     );
 
     // Create lists for the menuitems
-    let ids_menuitems = vec![switch.id, first_gate.id, second_gate.id, lamp.id];
+    let ids_menuitems = vec![switch.id, first_gate.id, second_gate.id, not.id, lamp.id];
     let positions_menuitems = vec![
         switch.position,
         first_gate.position,
         second_gate.position,
+        not.position,
         lamp.position,
     ];
     let textures_menuitems = vec![
         switch.texture,
         first_gate.texture,
         second_gate.texture,
+        not.texture,
         lamp.texture,
     ];
     let inputs_menuitems = vec![
         switch.inputs,
         first_gate.inputs,
         second_gate.inputs,
+        not.inputs,
         lamp.inputs,
     ];
     let outputs_menuitems = vec![
         switch.outputs,
         first_gate.outputs,
         second_gate.outputs,
+        not.outputs,
         lamp.outputs,
     ];
     let functions_menuitems = vec![
         switch.comp_func,
         first_gate.comp_func,
         second_gate.comp_func,
+        not.comp_func,
         lamp.comp_func,
     ];
     let input_values_menuitems = vec![
         switch.input_values,
         first_gate.input_values,
         second_gate.input_values,
+        not.input_values,
         lamp.input_values,
     ];
 
@@ -253,6 +272,10 @@ fn main() -> Result<(), String> {
                             if is_hit {
                                 end_point_cable = gates[gate].get_input_pos()[element];
 
+                                if cable_is_on {
+                                    gates[gate].input_values |= 2u64.pow(element as u32);
+                                }
+
                                 if cables.contains(&(true, (start_point_cable, end_point_cable)))
                                     || cables
                                         .contains(&(false, (start_point_cable, end_point_cable)))
@@ -285,6 +308,22 @@ fn main() -> Result<(), String> {
                         64,
                     );
                     if is_hit {
+                        let cables_to_remove: Vec<usize> = cables
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, (_, x))| {
+                                gates[element].get_input_pos().contains(&x.1)
+                                    || gates[element].get_output_pos().contains(&x.0)
+                            })
+                            .map(|(index, _)| index)
+                            .collect();
+
+                        for cable in cables_to_remove.iter().rev() {
+                            cables.remove(*cable);
+                        }
+
+                        inputs.remove(&gates[element].position);
+                        outputs.remove(&gates[element].position);
                         gates.remove(element);
                     }
                 }
@@ -345,8 +384,10 @@ fn main() -> Result<(), String> {
             inputs.insert(gates[end].position, gates[end].get_input_pos());
             outputs.insert(gates[end].position, gates[end].get_output_pos());
         }
+
         let mut indices_start: Vec<(usize, usize, usize)> = Vec::new();
         let mut indices_end: Vec<(usize, usize, usize)> = Vec::new();
+
         for (cable_index, cable) in cables.iter().enumerate() {
             for (gate_index, gate) in gates.iter().enumerate() {
                 for (input_index, input_pos) in gate.get_input_pos().iter().enumerate() {
@@ -362,6 +403,7 @@ fn main() -> Result<(), String> {
                 }
             }
         }
+
         if moved_old {
             inputs.remove(&gates[moved_old_index].position);
             outputs.remove(&gates[moved_old_index].position);
@@ -382,6 +424,7 @@ fn main() -> Result<(), String> {
 
         for (cable, gate, index) in indices_start {
             cables[cable].0 = gates[gate].get_result();
+
             if gate == moved_old_index {
                 cables[cable].1 .0 = gates[moved_old_index].get_output_pos()[index];
             }
@@ -391,11 +434,12 @@ fn main() -> Result<(), String> {
             if gate == moved_old_index {
                 cables[cable].1 .1 = gates[moved_old_index].get_input_pos()[index];
             }
-            if gates[gate].get_result() != old_cables[cable].0 {
+
+            if cables[cable].0 != old_cables[cable].0 {
                 gates[gate].input_values ^= 2u64.pow(index as u32);
             }
 
-            if gates[gate].id == 3 {
+            if gates[gate].id == 4 {
                 if gates[gate].input_values == 0 {
                     gates[gate].texture = &placeholder;
                 } else if gates[gate].input_values == 1 {
