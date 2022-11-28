@@ -60,15 +60,17 @@ fn main() -> Result<(), String> {
 
     let texture_creator = canvas.texture_creator();
     let switch_texture = texture_creator.load_texture("assets/switch_placeholder.png")?;
-    let placeholder = texture_creator.load_texture("assets/placeholder.png")?;
-    let placeholder2 = texture_creator.load_texture("assets/placeholder2.png")?;
+    let and_placeholder = texture_creator.load_texture("assets/and_placeholder.png")?;
+    let or_placeholder = texture_creator.load_texture("assets/or_placeholder.png")?;
     let not_placeholder = texture_creator.load_texture("assets/not_placeholder.png")?;
+    let nand_placeholder = texture_creator.load_texture("assets/nand_placeholder.png")?;
+    let xor_placeholder = texture_creator.load_texture("assets/xor_placeholder.png")?;
 
     let normal_rect = Rect::new(0, 0, SPRITE_HEIGHT, SPRITE_WIDTH);
 
-    let default_switch_value: u64 = 0b1;
-    let default_lamp_value: u64 = 0b0;
-    let default_value: u64 = 0b00;
+    let default_switch_value = Some(0b1);
+    let default_lamp_value = None;
+    let default_value = None;
 
     let switch = Gate::new(
         GateType::Switch,
@@ -80,11 +82,10 @@ fn main() -> Result<(), String> {
         switch_lamp_func,
         default_switch_value,
     );
-
     let and_gate = Gate::new(
         GateType::And,
         Point::new(96, height as i32 - 32),
-        &placeholder,
+        &and_placeholder,
         normal_rect,
         2,
         1,
@@ -94,17 +95,36 @@ fn main() -> Result<(), String> {
     let or_gate = Gate::new(
         GateType::Or,
         Point::new(160, height as i32 - 32),
-        &placeholder2,
+        &or_placeholder,
         normal_rect,
         2,
         1,
         or_func,
         default_value,
     );
-
-    let not = Gate::new(
-        GateType::Not,
+    let xor_gate = Gate::new(
+        GateType::XOr,
         Point::new(224, height as i32 - 32),
+        &xor_placeholder,
+        normal_rect,
+        2,
+        1,
+        xor_func,
+        default_value,
+    );
+    let nand_gate = Gate::new(
+        GateType::Nand,
+        Point::new(288, height as i32 - 32),
+        &nand_placeholder,
+        normal_rect,
+        2,
+        1,
+        nand_func,
+        default_value,
+    );
+    let not_gate = Gate::new(
+        GateType::Not,
+        Point::new(352, height as i32 - 32),
         &not_placeholder,
         normal_rect,
         1,
@@ -112,10 +132,9 @@ fn main() -> Result<(), String> {
         not_func,
         default_value,
     );
-
     let lamp = Gate::new(
         GateType::Lamp,
-        Point::new(288, height as i32 - 32),
+        Point::new(416, height as i32 - 32),
         &switch_texture,
         normal_rect,
         1,
@@ -125,51 +144,71 @@ fn main() -> Result<(), String> {
     );
 
     // Create lists for the menuitems
-    let gatetypes_menuitems = vec![switch.gatetype, and_gate.gatetype, or_gate.gatetype, not.gatetype, lamp.gatetype];
+    let gatetypes_menuitems = vec![
+        switch.gatetype,
+        and_gate.gatetype,
+        or_gate.gatetype,
+        nand_gate.gatetype,
+        xor_gate.gatetype,
+        not_gate.gatetype,
+        lamp.gatetype,
+    ];
     let positions_menuitems = vec![
         switch.position,
         and_gate.position,
         or_gate.position,
-        not.position,
+        nand_gate.position,
+        xor_gate.position,
+        not_gate.position,
         lamp.position,
     ];
     let textures_menuitems = vec![
         switch.texture,
         and_gate.texture,
         or_gate.texture,
-        not.texture,
+        nand_gate.texture,
+        xor_gate.texture,
+        not_gate.texture,
         lamp.texture,
     ];
     let inputs_menuitems = vec![
         switch.inputs,
         and_gate.inputs,
         or_gate.inputs,
-        not.inputs,
+        nand_gate.inputs,
+        xor_gate.inputs,
+        not_gate.inputs,
         lamp.inputs,
     ];
     let outputs_menuitems = vec![
         switch.outputs,
         and_gate.outputs,
         or_gate.outputs,
-        not.outputs,
+        nand_gate.outputs,
+        xor_gate.outputs,
+        not_gate.outputs,
         lamp.outputs,
     ];
     let functions_menuitems = vec![
         switch.comp_func,
         and_gate.comp_func,
         or_gate.comp_func,
-        not.comp_func,
+        nand_gate.comp_func,
+        xor_gate.comp_func,
+        not_gate.comp_func,
         lamp.comp_func,
     ];
     let input_values_menuitems = vec![
         switch.input_values,
         and_gate.input_values,
         or_gate.input_values,
-        not.input_values,
+        nand_gate.input_values,
+        xor_gate.input_values,
+        not_gate.input_values,
         lamp.input_values,
     ];
 
-    canvas.set_draw_color(EERIE_BLACK);
+    canvas.set_draw_color(JET);
     canvas.clear();
 
     let mut event_pump = sdl_context.event_pump()?;
@@ -243,8 +282,8 @@ fn main() -> Result<(), String> {
                             mouse_pos_y,
                             false,
                             &gates, // [ ]
-                            64,
-                            64,
+                            16,
+                            16,
                         );
                         if is_hit {
                             // [TODO] more than 1 output are not possible
@@ -268,14 +307,19 @@ fn main() -> Result<(), String> {
                                 mouse_pos_y,
                                 true,
                                 &gates, // [ ]
-                                10,
-                                10,
+                                16,
+                                16,
                             );
                             if is_hit {
                                 end_point_cable = gates[gate].input_positions()[element];
 
-                                if cable_is_on {
-                                    gates[gate].input_values |= 2u64.pow(element as u32);
+                                if cable_is_on && gates[gate].input_values.is_some() {
+                                    gates[gate].input_values = Some(
+                                        gates[gate].input_values.unwrap()
+                                            | 2u64.pow(element as u32),
+                                    );
+                                } else if cable_is_on {
+                                    gates[gate].input_values = Some(2u64.pow(element as u32));
                                 }
 
                                 if cables.contains(&Cable {
@@ -372,10 +416,10 @@ fn main() -> Result<(), String> {
                     );
                     if is_hit && gates[element].gatetype == GateType::Switch {
                         if gates[element].output_is_on() {
-                            gates[element].input_values = 0;
-                            gates[element].texture = &placeholder;
+                            gates[element].input_values = Some(0);
+                            gates[element].texture = &and_placeholder;
                         } else {
-                            gates[element].input_values = 1;
+                            gates[element].input_values = Some(1);
                             gates[element].texture = &switch_texture;
                         }
                     }
@@ -454,15 +498,17 @@ fn main() -> Result<(), String> {
                 cables[cable].end_point = gates[moved_old_index].input_positions()[index];
             }
 
-            if cables[cable].state != old_cables[cable].state {
-                gates[gate].input_values ^= 2u64.pow(index as u32);
+            if cables[cable].state != old_cables[cable].state && gates[gate].input_values.is_some()
+            {
+                gates[gate].input_values =
+                    Some(gates[gate].input_values.unwrap() ^ 2u64.pow(index as u32));
             }
 
             if gates[gate].gatetype == GateType::Lamp {
                 if gates[gate].output_is_on() {
                     gates[gate].texture = &switch_texture;
                 } else {
-                    gates[gate].texture = &placeholder;
+                    gates[gate].texture = &and_placeholder;
                 }
             }
         }

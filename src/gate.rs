@@ -7,6 +7,8 @@ pub enum GateType {
     And,
     Or,
     Not,
+    Nand,
+    XOr,
     Lamp,
 }
 
@@ -18,7 +20,7 @@ pub struct Gate<'a> {
     pub inputs: usize,
     pub outputs: usize,
     pub comp_func: fn(u64, usize) -> bool,
-    pub input_values: u64,
+    pub input_values: Option<u64>,
 }
 
 impl<'a> Gate<'a> {
@@ -31,7 +33,7 @@ impl<'a> Gate<'a> {
         inputs: usize,
         outputs: usize,
         comp_func: fn(u64, usize) -> bool,
-        input_values: u64,
+        input_values: Option<u64>,
     ) -> Self {
         Self {
             gatetype,
@@ -70,6 +72,9 @@ impl<'a> Gate<'a> {
     }
 
     pub fn output_is_on(&self) -> bool {
-        (self.comp_func)(self.input_values, self.inputs)
+        if self.input_values.is_some() {
+            return (self.comp_func)(self.input_values.unwrap(), self.inputs);
+        }
+        false
     }
 }

@@ -132,8 +132,8 @@ pub fn match_mouse_pos_con(
 }
 
 fn draw_connections(canvas: &mut WindowCanvas, position: Point) -> Result<(), String> {
-    canvas.filled_circle(position.x() as i16, position.y() as i16, 5, SNOW)?;
-    canvas.set_draw_color(EERIE_BLACK);
+    canvas.filled_circle(position.x() as i16, position.y() as i16, 8, EERIE_BLACK)?;
+    canvas.set_draw_color(JET);
 
     Ok(())
 }
@@ -148,7 +148,7 @@ fn draw_cable(
     let color = if state == State::On {
         MIDDLE_BLUE_GREEN
     } else {
-        JET
+        EERIE_BLACK
     };
 
     canvas.thick_line(
@@ -159,14 +159,14 @@ fn draw_cable(
         5,
         color,
     )?;
-    canvas.set_draw_color(EERIE_BLACK);
+    canvas.set_draw_color(JET);
 
     Ok(())
 }
 
 fn draw_active_mode(canvas: &mut WindowCanvas, mode: Mode) -> Result<(), String> {
     canvas.string(10, 10, &mode.to_string(), SNOW)?;
-    canvas.set_draw_color(EERIE_BLACK);
+    canvas.set_draw_color(JET);
 
     Ok(())
 }
@@ -175,11 +175,11 @@ fn draw_menu_background(canvas: &mut WindowCanvas) -> Result<(), String> {
     let (width, height) = canvas.output_size()?;
     let background_menu = Rect::new(0, height as i32 - SPRITE_SIZE as i32, width, SPRITE_SIZE);
 
-    canvas.set_draw_color(JET);
+    canvas.set_draw_color(EERIE_BLACK);
     canvas.draw_rect(background_menu)?;
     canvas.fill_rect(background_menu)?;
 
-    canvas.set_draw_color(EERIE_BLACK);
+    canvas.set_draw_color(JET);
 
     Ok(())
 }

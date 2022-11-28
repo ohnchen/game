@@ -34,3 +34,14 @@ pub fn not_func(inputs: u64, _: usize) -> bool {
     }
     false
 }
+
+pub fn nand_func(inputs: u64, num_of_inputs: usize) -> bool {
+    !and_func(inputs, num_of_inputs)
+}
+
+pub fn xor_func(inputs: u64, num_of_inputs: usize) -> bool {
+    if and_func(inputs, num_of_inputs) || inputs == 0 {
+        return false;
+    }
+    true
+}
