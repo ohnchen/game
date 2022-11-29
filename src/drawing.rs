@@ -7,8 +7,6 @@ use sdl2::render::{TextureCreator, WindowCanvas};
 use sdl2::ttf::Font;
 use sdl2::video::WindowContext;
 
-pub const SPRITE_SIZE: u32 = 64;
-
 pub const EERIE_BLACK: Color = Color::RGB(19, 21, 21);
 pub const JET: Color = Color::RGB(43, 44, 40);
 //pub const PERSIAN_GREEN: Color = Color::RGB(51, 153, 137);
@@ -148,7 +146,7 @@ fn draw_cable(
 
 fn draw_menu_background(canvas: &mut WindowCanvas) -> Result<(), String> {
     let (width, height) = canvas.output_size()?;
-    let background_menu = Rect::new(0, height as i32 - SPRITE_SIZE as i32, width, SPRITE_SIZE);
+    let background_menu = Rect::new(0, height as i32 - 76, width, 76);
 
     canvas.set_draw_color(EERIE_BLACK);
     canvas.draw_rect(background_menu)?;

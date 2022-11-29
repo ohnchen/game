@@ -76,7 +76,7 @@ fn main() -> Result<(), String> {
     let switch = Gate::new(
         GateType::Switch,
         " ",
-        Point::new(34, height as i32 - 32),
+        Point::new(38, height as i32 - 38),
         &switch_texture,
         normal_rect,
         0,
@@ -87,7 +87,7 @@ fn main() -> Result<(), String> {
     let and_gate = Gate::new(
         GateType::And,
         "AND",
-        Point::new(34 + 66, height as i32 - 32),
+        Point::new(38 + 66, height as i32 - 38),
         &and_placeholder,
         normal_rect,
         2,
@@ -98,7 +98,7 @@ fn main() -> Result<(), String> {
     let or_gate = Gate::new(
         GateType::Or,
         "OR",
-        Point::new(34 + 2 * 66, height as i32 - 32),
+        Point::new(38 + 2 * 66, height as i32 - 38),
         &or_placeholder,
         normal_rect,
         2,
@@ -109,7 +109,7 @@ fn main() -> Result<(), String> {
     let xor_gate = Gate::new(
         GateType::XOr,
         "XOR",
-        Point::new(34 + 3 * 66, height as i32 - 32),
+        Point::new(38 + 3 * 66, height as i32 - 38),
         &xor_placeholder,
         normal_rect,
         2,
@@ -120,7 +120,7 @@ fn main() -> Result<(), String> {
     let nand_gate = Gate::new(
         GateType::Nand,
         "NAND",
-        Point::new(34 + 4 * 66, height as i32 - 32),
+        Point::new(38 + 4 * 66, height as i32 - 38),
         &nand_placeholder,
         normal_rect,
         2,
@@ -131,7 +131,7 @@ fn main() -> Result<(), String> {
     let not_gate = Gate::new(
         GateType::Not,
         "NOT",
-        Point::new(34 + 5 * 66, height as i32 - 32),
+        Point::new(38 + 5 * 66, height as i32 - 38),
         &not_placeholder,
         normal_rect,
         1,
@@ -142,7 +142,7 @@ fn main() -> Result<(), String> {
     let lamp = Gate::new(
         GateType::Lamp,
         " ",
-        Point::new(34 + 6 * 66, height as i32 - 32),
+        Point::new(38 + 6 * 66, height as i32 - 38),
         &switch_texture,
         normal_rect,
         1,
