@@ -1,6 +1,7 @@
 use sdl2::rect::{Point, Rect};
 use sdl2::render::Texture;
 
+#[allow(dead_code)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum GateType {
     Switch,
@@ -10,10 +11,13 @@ pub enum GateType {
     Nand,
     XOr,
     Lamp,
+    Custom,
 }
 
+#[derive(Clone, Copy)]
 pub struct Gate<'a> {
     pub gatetype: GateType,
+    pub gatename: &'a str,
     pub position: Point,
     pub texture: &'a Texture<'a>,
     pub sprite: Rect,
@@ -27,6 +31,7 @@ impl<'a> Gate<'a> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         gatetype: GateType,
+        gatename: &'a str,
         position: Point,
         texture: &'a Texture<'a>,
         sprite: Rect,
@@ -37,6 +42,7 @@ impl<'a> Gate<'a> {
     ) -> Self {
         Self {
             gatetype,
+            gatename,
             position,
             texture,
             sprite,

@@ -3,21 +3,9 @@ use crate::gate::Gate;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
-use sdl2::render::{Texture, WindowCanvas};
-
-use std::fmt;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Mode {
-    Insert,
-    Visual,
-}
-
-impl fmt::Display for Mode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "-- {:?} --", self)
-    }
-}
+use sdl2::render::{TextureCreator, WindowCanvas};
+use sdl2::ttf::Font;
+use sdl2::video::WindowContext;
 
 pub const SPRITE_SIZE: u32 = 64;
 
@@ -30,36 +18,30 @@ pub const SNOW: Color = Color::RGB(255, 250, 251);
 #[allow(clippy::too_many_arguments)]
 pub fn render(
     canvas: &mut WindowCanvas,
-    textures_menuitems: &[&Texture],
-    textures: &[&Texture],
-    positions_menuitems: &[Point],
-    positions: &[Point],
+    font: &Font,
+    gates_menu: &[&Gate],
+    gates: &[Gate],
     cables: &[Cable],
     inputs: &[Point],
     outputs: &[Point],
     sprite: Rect,
-    mode: Mode,
 ) -> Result<(), String> {
     canvas.clear();
 
-    for j in 0..positions.len() {
-        draw_sprite(canvas, textures[j], positions[j], sprite)?;
+    let texture_creator = canvas.texture_creator();
+
+    for gate in gates.iter() {
+        draw_sprite(canvas, font, &texture_creator, *gate, sprite)?;
     }
 
     for cable in cables.iter() {
         draw_cable(canvas, cable.state, cable.start_point, cable.end_point)?;
     }
 
-    draw_active_mode(canvas, mode)?;
     draw_menu_background(canvas)?;
 
-    for i in 0..positions_menuitems.len() {
-        draw_sprite(
-            canvas,
-            textures_menuitems[i],
-            positions_menuitems[i],
-            sprite,
-        )?;
+    for gate in gates_menu.iter() {
+        draw_sprite(canvas, font, &texture_creator, **gate, sprite)?;
     }
 
     for input in inputs.iter() {
@@ -164,13 +146,6 @@ fn draw_cable(
     Ok(())
 }
 
-fn draw_active_mode(canvas: &mut WindowCanvas, mode: Mode) -> Result<(), String> {
-    canvas.string(10, 10, &mode.to_string(), SNOW)?;
-    canvas.set_draw_color(JET);
-
-    Ok(())
-}
-
 fn draw_menu_background(canvas: &mut WindowCanvas) -> Result<(), String> {
     let (width, height) = canvas.output_size()?;
     let background_menu = Rect::new(0, height as i32 - SPRITE_SIZE as i32, width, SPRITE_SIZE);
@@ -186,12 +161,26 @@ fn draw_menu_background(canvas: &mut WindowCanvas) -> Result<(), String> {
 
 fn draw_sprite(
     canvas: &mut WindowCanvas,
-    texture: &Texture,
-    position: Point,
+    font: &Font,
+    texture_creator: &TextureCreator<WindowContext>,
+    gate: Gate,
     sprite: Rect,
 ) -> Result<(), String> {
-    let screen_rect = Rect::from_center(position, sprite.width(), sprite.height());
-    canvas.copy(texture, sprite, screen_rect)?;
+    let screen_rect = Rect::from_center(gate.position, sprite.width(), sprite.height());
+    let font_rect = Rect::from_center(gate.position, sprite.width() / 2, sprite.height() / 2);
+
+    let text = gate.gatename.to_string();
+    let surface = font
+        .render(&text)
+        .blended(SNOW)
+        .map_err(|e| e.to_string())?;
+
+    let text = texture_creator
+        .create_texture_from_surface(&surface)
+        .map_err(|e| e.to_string())?;
+
+    canvas.copy(gate.texture, None, screen_rect)?;
+    canvas.copy(&text, None, font_rect)?;
 
     Ok(())
 }

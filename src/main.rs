@@ -12,8 +12,8 @@ use sdl2::image::{self, InitFlag, LoadTexture};
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
-use sdl2::render::Texture;
 use std::collections::HashMap;
+use std::path::Path;
 use std::time::Duration;
 
 pub const EERIE_BLACK: Color = Color::RGB(19, 21, 21);
@@ -27,9 +27,6 @@ pub const SPRITE_WIDTH: u32 = 64;
 
 fn positions(gates: &[Gate]) -> Vec<Point> {
     gates.iter().map(|x| x.position).collect()
-}
-fn textures<'a>(gates: &'a [Gate<'a>]) -> Vec<&Texture<'a>> {
-    gates.iter().map(|x| x.texture).collect()
 }
 
 fn main() -> Result<(), String> {
@@ -49,7 +46,6 @@ fn main() -> Result<(), String> {
         .build()
         .expect("could not make a canvas");
 
-    let mut mode: drawing::Mode = drawing::Mode::Visual;
     let (_, height) = canvas.output_size()?;
 
     let mut gates: Vec<Gate> = Vec::new();
@@ -66,6 +62,11 @@ fn main() -> Result<(), String> {
     let nand_placeholder = texture_creator.load_texture("assets/nand_placeholder.png")?;
     let xor_placeholder = texture_creator.load_texture("assets/xor_placeholder.png")?;
 
+    let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
+    let font_path: &Path = Path::new(&"font/NotoSansCJK-Regular.ttc");
+    let mut font = ttf_context.load_font(font_path, 128)?;
+    font.set_style(sdl2::ttf::FontStyle::NORMAL);
+
     let normal_rect = Rect::new(0, 0, SPRITE_HEIGHT, SPRITE_WIDTH);
 
     let default_switch_value = Some(0b1);
@@ -74,7 +75,8 @@ fn main() -> Result<(), String> {
 
     let switch = Gate::new(
         GateType::Switch,
-        Point::new(32, height as i32 - 32),
+        " ",
+        Point::new(34, height as i32 - 32),
         &switch_texture,
         normal_rect,
         0,
@@ -84,7 +86,8 @@ fn main() -> Result<(), String> {
     );
     let and_gate = Gate::new(
         GateType::And,
-        Point::new(96, height as i32 - 32),
+        "AND",
+        Point::new(34 + 66, height as i32 - 32),
         &and_placeholder,
         normal_rect,
         2,
@@ -94,7 +97,8 @@ fn main() -> Result<(), String> {
     );
     let or_gate = Gate::new(
         GateType::Or,
-        Point::new(160, height as i32 - 32),
+        "OR",
+        Point::new(34 + 2 * 66, height as i32 - 32),
         &or_placeholder,
         normal_rect,
         2,
@@ -104,7 +108,8 @@ fn main() -> Result<(), String> {
     );
     let xor_gate = Gate::new(
         GateType::XOr,
-        Point::new(224, height as i32 - 32),
+        "XOR",
+        Point::new(34 + 3 * 66, height as i32 - 32),
         &xor_placeholder,
         normal_rect,
         2,
@@ -114,7 +119,8 @@ fn main() -> Result<(), String> {
     );
     let nand_gate = Gate::new(
         GateType::Nand,
-        Point::new(288, height as i32 - 32),
+        "NAND",
+        Point::new(34 + 4 * 66, height as i32 - 32),
         &nand_placeholder,
         normal_rect,
         2,
@@ -124,7 +130,8 @@ fn main() -> Result<(), String> {
     );
     let not_gate = Gate::new(
         GateType::Not,
-        Point::new(352, height as i32 - 32),
+        "NOT",
+        Point::new(34 + 5 * 66, height as i32 - 32),
         &not_placeholder,
         normal_rect,
         1,
@@ -134,7 +141,8 @@ fn main() -> Result<(), String> {
     );
     let lamp = Gate::new(
         GateType::Lamp,
-        Point::new(416, height as i32 - 32),
+        " ",
+        Point::new(34 + 6 * 66, height as i32 - 32),
         &switch_texture,
         normal_rect,
         1,
@@ -144,6 +152,9 @@ fn main() -> Result<(), String> {
     );
 
     // Create lists for the menuitems
+    let gates_menuitems = vec![
+        &switch, &and_gate, &or_gate, &nand_gate, &xor_gate, &not_gate, &lamp,
+    ];
     let gatetypes_menuitems = vec![
         switch.gatetype,
         and_gate.gatetype,
@@ -152,6 +163,15 @@ fn main() -> Result<(), String> {
         xor_gate.gatetype,
         not_gate.gatetype,
         lamp.gatetype,
+    ];
+    let gatenames_menuitems = vec![
+        switch.gatename,
+        and_gate.gatename,
+        or_gate.gatename,
+        nand_gate.gatename,
+        xor_gate.gatename,
+        not_gate.gatename,
+        lamp.gatename,
     ];
     let positions_menuitems = vec![
         switch.position,
@@ -239,115 +259,107 @@ fn main() -> Result<(), String> {
                 Event::MouseButtonDown {
                     mouse_btn: sdl2::mouse::MouseButton::Left,
                     ..
-                } => match mode {
-                    drawing::Mode::Visual => {
-                        if mouse_pos_y > height as i32 - 64 {
-                            let (is_hit, element) = drawing::match_mouse_pos(
-                                mouse_pos_x,
-                                mouse_pos_y,
-                                &positions_menuitems,
-                                64,
-                                64,
-                            );
-                            if is_hit {
-                                moved_new = true;
-                                gates.push(Gate::new(
-                                    gatetypes_menuitems[element],
-                                    Point::new(mouse_pos_x, mouse_pos_y),
-                                    textures_menuitems[element],
-                                    normal_rect,
-                                    inputs_menuitems[element],
-                                    outputs_menuitems[element],
-                                    functions_menuitems[element],
-                                    input_values_menuitems[element],
-                                ));
-                            }
-                        } else {
-                            let (is_hit, element) = drawing::match_mouse_pos(
-                                mouse_pos_x,
-                                mouse_pos_y,
-                                &positions(&gates),
-                                64,
-                                64,
-                            );
-                            if is_hit {
-                                moved_old = true;
-                                moved_old_index = element;
-                            }
-                        }
-                    }
-                    drawing::Mode::Insert => {
-                        let (is_hit, gate, element) = drawing::match_mouse_pos_con(
+                } => {
+                    if mouse_pos_y > height as i32 - 64 {
+                        let (is_hit, element) = drawing::match_mouse_pos(
                             mouse_pos_x,
                             mouse_pos_y,
-                            false,
-                            &gates, // [ ]
-                            16,
-                            16,
+                            &positions_menuitems,
+                            64,
+                            64,
                         );
                         if is_hit {
-                            // [TODO] more than 1 output are not possible
-                            cable_is_on = gates[gate].output_is_on();
-                            start_point_cable = gates[gate].output_positions()[element];
+                            moved_new = true;
+                            gates.push(Gate::new(
+                                gatetypes_menuitems[element],
+                                gatenames_menuitems[element],
+                                Point::new(mouse_pos_x, mouse_pos_y),
+                                textures_menuitems[element],
+                                normal_rect,
+                                inputs_menuitems[element],
+                                outputs_menuitems[element],
+                                functions_menuitems[element],
+                                input_values_menuitems[element],
+                            ));
+                        }
+                    } else {
+                        let (is_hit, element) = drawing::match_mouse_pos(
+                            mouse_pos_x,
+                            mouse_pos_y,
+                            &positions(&gates),
+                            64,
+                            64,
+                        );
+                        if is_hit {
+                            moved_old = true;
+                            moved_old_index = element;
                         }
                     }
-                },
+                    let (is_hit, gate, element) = drawing::match_mouse_pos_con(
+                        mouse_pos_x,
+                        mouse_pos_y,
+                        false,
+                        &gates,
+                        16,
+                        16,
+                    );
+                    if is_hit {
+                        // [TODO] more than 1 output are not possible, that is needed for storing
+                        // custom gates
+                        cable_is_on = gates[gate].output_is_on();
+                        start_point_cable = gates[gate].output_positions()[element];
+                    }
+                }
                 Event::MouseButtonUp {
                     mouse_btn: sdl2::mouse::MouseButton::Left,
                     ..
                 } => {
-                    match mode {
-                        drawing::Mode::Visual => {
-                            moved_new = false;
-                            moved_old = false;
+                    moved_new = false;
+                    moved_old = false;
+                    let (is_hit, gate, element) = drawing::match_mouse_pos_con(
+                        mouse_pos_x,
+                        mouse_pos_y,
+                        true,
+                        &gates, // [ ]
+                        16,
+                        16,
+                    );
+                    if is_hit {
+                        end_point_cable = gates[gate].input_positions()[element];
+
+                        if cable_is_on && gates[gate].input_values.is_some() {
+                            gates[gate].input_values =
+                                Some(gates[gate].input_values.unwrap() | 2u64.pow(element as u32));
+                        } else if cable_is_on {
+                            gates[gate].input_values = Some(2u64.pow(element as u32));
+                        } else if !cable_is_on && gates[gate].input_values.is_none() {
+                            gates[gate].input_values = Some(0);
                         }
-                        drawing::Mode::Insert => {
-                            let (is_hit, gate, element) = drawing::match_mouse_pos_con(
-                                mouse_pos_x,
-                                mouse_pos_y,
-                                true,
-                                &gates, // [ ]
-                                16,
-                                16,
+
+                        if cables.contains(&Cable {
+                            state: State::On,
+                            start_point: start_point_cable,
+                            end_point: end_point_cable,
+                        }) || cables.contains(&Cable {
+                            state: State::Off,
+                            start_point: start_point_cable,
+                            end_point: end_point_cable,
+                        }) {
+                            cables.remove(
+                                cables
+                                    .iter()
+                                    .position(|&x| {
+                                        x.start_point == start_point_cable
+                                            && x.end_point == end_point_cable
+                                    })
+                                    .unwrap(),
                             );
-                            if is_hit {
-                                end_point_cable = gates[gate].input_positions()[element];
-
-                                if cable_is_on && gates[gate].input_values.is_some() {
-                                    gates[gate].input_values = Some(
-                                        gates[gate].input_values.unwrap()
-                                            | 2u64.pow(element as u32),
-                                    );
-                                } else if cable_is_on {
-                                    gates[gate].input_values = Some(2u64.pow(element as u32));
-                                }
-
-                                if cables.contains(&Cable {
-                                    state: State::On,
-                                    start_point: start_point_cable,
-                                    end_point: end_point_cable,
-                                }) || cables.contains(&Cable {
-                                    state: State::Off,
-                                    start_point: start_point_cable,
-                                    end_point: end_point_cable,
-                                }) {
-                                    cables.remove(
-                                        cables
-                                            .iter()
-                                            .position(|&x| {
-                                                x.start_point == start_point_cable
-                                                    && x.end_point == end_point_cable
-                                            })
-                                            .unwrap(),
-                                    );
-                                } else if start_point_cable != end_point_cable {
-                                    cables.push(Cable::new(
-                                        cable_is_on,
-                                        start_point_cable,
-                                        end_point_cable,
-                                    ));
-                                }
-                            }
+                        } else if start_point_cable != end_point_cable {
+                            cables.push(Cable::new(
+                                cable_is_on,
+                                start_point_cable,
+                                end_point_cable,
+                            ));
                         }
                     }
                 }
@@ -390,18 +402,6 @@ fn main() -> Result<(), String> {
                     cables.clear();
                     inputs.clear();
                     outputs.clear();
-                }
-                Event::KeyDown {
-                    keycode: Some(Keycode::V),
-                    ..
-                } => {
-                    mode = drawing::Mode::Visual;
-                }
-                Event::KeyDown {
-                    keycode: Some(Keycode::I),
-                    ..
-                } => {
-                    mode = drawing::Mode::Insert;
                 }
                 Event::KeyDown {
                     keycode: Some(Keycode::S),
@@ -529,15 +529,13 @@ fn main() -> Result<(), String> {
 
         drawing::render(
             &mut canvas,
-            &textures_menuitems,
-            &textures(&gates),
-            &positions_menuitems,
-            &positions(&gates),
+            &font,
+            &gates_menuitems,
+            &gates,
             &cables,
             &input_points,
             &output_points,
             normal_rect,
-            mode,
         )?;
 
         // Time management!
