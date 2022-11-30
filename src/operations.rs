@@ -36,7 +36,6 @@ pub fn xor_func(inputs: &[bool]) -> Vec<bool> {
     vec![true]
 }
 
-// Add function works
 // [TODO] remove this function and implement functionality for adding custom gates
 pub fn add_func(inputs: &[bool]) -> Vec<bool> {
     vec![

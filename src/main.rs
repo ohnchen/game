@@ -40,6 +40,7 @@ fn count_occurences(gates: &[Gate], gatetype: GateType) -> usize {
     gates.iter().filter(|&x| x.gatetype == gatetype).count()
 }
 
+// I have no idea how to make this work
 fn compressed_func() -> fn(&[bool]) -> Vec<bool> {
     and_func
 }

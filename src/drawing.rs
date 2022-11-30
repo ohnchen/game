@@ -46,6 +46,14 @@ pub fn render(
         draw_cable(canvas, cable.state, cable.start_point, cable.end_point)?;
     }
 
+    for input in inputs.iter() {
+        draw_connections(canvas, *input)?;
+    }
+
+    for output in outputs.iter().rev() {
+        draw_connections(canvas, *output)?;
+    }
+
     draw_create_button(canvas, font, &texture_creator)?;
     draw_menu_background(canvas)?;
 
@@ -59,13 +67,6 @@ pub fn render(
             textures_menu[gate],
             sprite,
         )?;
-    }
-
-    for input in inputs.iter() {
-        draw_connections(canvas, *input)?;
-    }
-    for output in outputs.iter().rev() {
-        draw_connections(canvas, *output)?;
     }
 
     canvas.present();
