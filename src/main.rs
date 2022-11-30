@@ -7,6 +7,7 @@ use crate::cable::*;
 use crate::gate::*;
 use crate::operations::*;
 
+use drawing::match_create_pos;
 use sdl2::event::Event;
 use sdl2::image::{self, InitFlag, LoadTexture};
 use sdl2::keyboard::Keycode;
@@ -287,14 +288,13 @@ fn main() -> Result<(), String> {
                     ..
                 } => {
                     if mouse_pos_y > height as i32 - 64 {
-                        let (is_hit, element) = drawing::match_mouse_pos(
+                        if let Some(element) = drawing::match_mouse_pos(
                             mouse_pos_x,
                             mouse_pos_y,
                             &positions_menuitems,
                             64,
                             64,
-                        );
-                        if is_hit {
+                        ) {
                             moved_new = true;
                             gates.push(Gate::new(
                                 gatetypes_menuitems[element],
@@ -308,28 +308,24 @@ fn main() -> Result<(), String> {
                                 input_values_menuitems[element],
                             ));
                         }
-                    } else {
-                        let (is_hit, element) = drawing::match_mouse_pos(
-                            mouse_pos_x,
-                            mouse_pos_y,
-                            &positions(&gates),
-                            64,
-                            64,
-                        );
-                        if is_hit {
-                            moved_old = true;
-                            moved_old_index = element;
-                        }
+                    } else if let Some(element) = drawing::match_mouse_pos(
+                        mouse_pos_x,
+                        mouse_pos_y,
+                        &positions(&gates),
+                        64,
+                        64,
+                    ) {
+                        moved_old = true;
+                        moved_old_index = element;
                     }
-                    let (is_hit, gate, element, output_pos) = drawing::match_mouse_pos_con(
+                    if let Some((gate, element, output_pos)) = drawing::match_mouse_pos_con(
                         mouse_pos_x,
                         mouse_pos_y,
                         false,
                         &gates,
                         16,
                         16,
-                    );
-                    if is_hit {
+                    ) {
                         cable_is_on = gates[gate].output_is_on()[output_pos];
                         start_point_cable = gates[gate].output_positions()[element];
                     }
@@ -340,15 +336,14 @@ fn main() -> Result<(), String> {
                 } => {
                     moved_new = false;
                     moved_old = false;
-                    let (is_hit, gate, element, _) = drawing::match_mouse_pos_con(
+                    if let Some((gate, element, _)) = drawing::match_mouse_pos_con(
                         mouse_pos_x,
                         mouse_pos_y,
                         true,
                         &gates, // [ ]
                         16,
                         16,
-                    );
-                    if is_hit {
+                    ) {
                         end_point_cable = gates[gate].input_positions()[element];
 
                         if cable_is_on && gates[gate].input_values.is_some() {
@@ -388,19 +383,21 @@ fn main() -> Result<(), String> {
                             ));
                         }
                     }
+                    if match_create_pos(&canvas, mouse_pos_x, mouse_pos_y, 50, 30) {
+                        println!("hit");
+                    }
                 }
                 Event::MouseButtonDown {
                     mouse_btn: sdl2::mouse::MouseButton::Right,
                     ..
                 } => {
-                    let (is_hit, element) = drawing::match_mouse_pos(
+                    if let Some(element) = drawing::match_mouse_pos(
                         mouse_pos_x,
                         mouse_pos_y,
                         &positions(&gates),
                         64,
                         64,
-                    );
-                    if is_hit {
+                    ) {
                         let cables_to_remove: Vec<usize> = cables
                             .iter()
                             .enumerate()
@@ -433,20 +430,21 @@ fn main() -> Result<(), String> {
                     keycode: Some(Keycode::S),
                     ..
                 } => {
-                    let (is_hit, element) = drawing::match_mouse_pos(
+                    if let Some(element) = drawing::match_mouse_pos(
                         mouse_pos_x,
                         mouse_pos_y,
                         &positions(&gates),
                         64,
                         64,
-                    );
-                    if is_hit && gates[element].gatetype == GateType::Switch {
-                        if gates[element].output_is_on()[0] {
-                            gates[element].input_values = Some(0);
-                            gates[element].texture = &and_placeholder;
-                        } else {
-                            gates[element].input_values = Some(1);
-                            gates[element].texture = &switch_texture;
+                    ) {
+                        if gates[element].gatetype == GateType::Switch {
+                            if gates[element].output_is_on()[0] {
+                                gates[element].input_values = Some(0);
+                                gates[element].texture = &and_placeholder;
+                            } else {
+                                gates[element].input_values = Some(1);
+                                gates[element].texture = &switch_texture;
+                            }
                         }
                     }
                 }

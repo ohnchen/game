@@ -84,7 +84,7 @@ impl<'a> Gate<'a> {
                 self.inputs,
             ));
         }
-        vec![false]
+        vec![false; self.outputs]
     }
 
     fn convert_u64_in_bools(input_u64: u64, input_count: usize) -> Vec<bool> {

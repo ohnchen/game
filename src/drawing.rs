@@ -9,7 +9,7 @@ use sdl2::video::WindowContext;
 
 pub const EERIE_BLACK: Color = Color::RGB(19, 21, 21);
 pub const JET: Color = Color::RGB(43, 44, 40);
-//pub const PERSIAN_GREEN: Color = Color::RGB(51, 153, 137);
+pub const PERSIAN_GREEN: Color = Color::RGB(51, 153, 137);
 pub const MIDDLE_BLUE_GREEN: Color = Color::RGB(125, 226, 209);
 pub const SNOW: Color = Color::RGB(255, 250, 251);
 
@@ -36,6 +36,7 @@ pub fn render(
         draw_cable(canvas, cable.state, cable.start_point, cable.end_point)?;
     }
 
+    draw_create_button(canvas, font, &texture_creator)?;
     draw_menu_background(canvas)?;
 
     for gate in gates_menu.iter() {
@@ -45,7 +46,7 @@ pub fn render(
     for input in inputs.iter() {
         draw_connections(canvas, *input)?;
     }
-    for output in outputs.iter() {
+    for output in outputs.iter().rev() {
         draw_connections(canvas, *output)?;
     }
 
@@ -59,17 +60,17 @@ pub fn match_mouse_pos(
     positions: &[Point],
     width: i32,
     height: i32,
-) -> (bool, usize) {
+) -> Option<usize> {
     for pos in positions.iter() {
         if mouse_pos_x > pos.x() - height / 2
             && mouse_pos_x < pos.x() + height / 2
             && mouse_pos_y > pos.y() - width / 2
             && mouse_pos_y < pos.y() + width / 2
         {
-            return (true, positions.iter().position(|&x| x == *pos).unwrap());
+            return Some(positions.iter().position(|&x| x == *pos).unwrap());
         }
     }
-    (false, usize::MAX)
+    None
 }
 
 pub fn match_mouse_pos_con(
@@ -79,7 +80,7 @@ pub fn match_mouse_pos_con(
     gates: &[Gate],
     width: i32,
     height: i32,
-) -> (bool, usize, usize, usize) {
+) -> Option<(usize, usize, usize)> {
     let mut con_positions: Vec<(usize, Vec<Point>)> = Vec::new();
     let mut output_pos_index = 0;
 
@@ -117,17 +118,63 @@ pub fn match_mouse_pos_con(
                 && mouse_pos_y > pos.y() - width / 2
                 && mouse_pos_y < pos.y() + width / 2
             {
-                return (
-                    true,
+                return Some((
                     *index,
                     positions.iter().position(|&x| x == *pos).unwrap(),
                     output_pos_index,
-                );
+                ));
             }
         }
     }
 
-    (false, usize::MAX, usize::MAX, usize::MAX)
+    None
+}
+
+pub fn match_create_pos(
+    canvas: &WindowCanvas,
+    mouse_pos_x: i32,
+    mouse_pos_y: i32,
+    width: i32,
+    height: i32,
+) -> bool {
+    let (w_width, _) = canvas.output_size().unwrap();
+    if mouse_pos_x > w_width as i32 - width - 10
+        && mouse_pos_x < w_width as i32 - 10
+        && mouse_pos_y > 10
+        && mouse_pos_y < height + 10
+    {
+        return true;
+    }
+    false
+}
+
+fn draw_create_button(
+    canvas: &mut WindowCanvas,
+    font: &Font,
+    texture_creator: &TextureCreator<WindowContext>,
+) -> Result<(), String> {
+    let (width, _) = canvas.output_size()?;
+    let back_rect = Rect::new(width as i32 - 60, 10, 50, 30);
+    let font_rect = Rect::from_center(back_rect.center(), 40, 20);
+
+    let text = "CREATE".to_string();
+    let surface = font
+        .render(&text)
+        .blended(PERSIAN_GREEN)
+        .map_err(|e| e.to_string())?;
+
+    let text = texture_creator
+        .create_texture_from_surface(&surface)
+        .map_err(|e| e.to_string())?;
+
+    canvas.set_draw_color(EERIE_BLACK);
+    canvas.draw_rect(back_rect)?;
+    canvas.fill_rect(back_rect)?;
+
+    canvas.copy(&text, None, font_rect)?;
+    canvas.set_draw_color(JET);
+
+    Ok(())
 }
 
 fn draw_connections(canvas: &mut WindowCanvas, position: Point) -> Result<(), String> {
