@@ -58,8 +58,8 @@ impl<'a> Gate<'a> {
         for i in 1..self.inputs + 1 {
             input_pos.push(Point::new(
                 self.position.x() - self.sprite.width() as i32 / 2,
-                self.position.y() as i32 - (self.sprite.height() as i32 / 2)
-                    + i as i32 * (self.sprite.height() as i32 / (self.inputs as i32 + 1)),
+                self.position.y() as i32 - ((self.sprite.height() as i32 + 8) / 2)
+                    + i as i32 * ((self.sprite.height() as i32 + 8) / (self.inputs as i32 + 1)),
             ));
         }
         input_pos
@@ -70,8 +70,8 @@ impl<'a> Gate<'a> {
         for i in 1..self.outputs + 1 {
             output_pos.push(Point::new(
                 self.position.x() + self.sprite.width() as i32 / 2,
-                self.position.y() as i32 - (self.sprite.height() as i32 / 2)
-                    + i as i32 * (self.sprite.height() as i32 / (self.outputs as i32 + 1)),
+                self.position.y() as i32 - ((self.sprite.height() as i32 + 8) / 2)
+                    + i as i32 * ((self.sprite.height() as i32 + 8) / (self.outputs as i32 + 1)),
             ));
         }
         output_pos

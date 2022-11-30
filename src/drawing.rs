@@ -24,11 +24,11 @@ pub fn render(
     cables: &[Cable],
     inputs: &[Point],
     outputs: &[Point],
-    sprite: Rect,
 ) -> Result<(), String> {
     canvas.clear();
 
     let texture_creator = canvas.texture_creator();
+    let sprite = Rect::new(0, 0, super::SPRITE_WIDTH, super::SPRITE_HEIGHT);
 
     for gate in gates.iter() {
         draw_sprite(
@@ -38,7 +38,7 @@ pub fn render(
             gate.position,
             gate.gatename.to_string(),
             gate.texture,
-            sprite,
+            gate.sprite,
         )?;
     }
 
@@ -251,7 +251,7 @@ fn draw_sprite(
     sprite: Rect,
 ) -> Result<(), String> {
     let screen_rect = Rect::from_center(position, sprite.width(), sprite.height());
-    let font_rect = Rect::from_center(position, sprite.width() / 2, sprite.height() / 2);
+    let font_rect = Rect::from_center(position, 32, 32);
 
     let text = gatename.to_string();
     let surface = font

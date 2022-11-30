@@ -26,6 +26,8 @@ pub const SNOW: Color = Color::RGB(255, 250, 251);
 pub const SPRITE_HEIGHT: u32 = 64;
 pub const SPRITE_WIDTH: u32 = 64;
 
+pub const DEFAULT_LEN_MENUITEMS: i32 = 8;
+
 fn positions(gates: &[Gate]) -> Vec<Point> {
     gates.iter().map(|x| x.position).collect()
 }
@@ -59,7 +61,7 @@ fn main() -> Result<(), String> {
         .build()
         .expect("could not make a canvas");
 
-    let (_, height) = canvas.output_size()?;
+    let (width, height) = canvas.output_size()?;
 
     let mut gates: Vec<Gate> = Vec::new();
     let mut cables: Vec<Cable> = Vec::new();
@@ -80,7 +82,7 @@ fn main() -> Result<(), String> {
     let mut font = ttf_context.load_font(font_path, 128)?;
     font.set_style(sdl2::ttf::FontStyle::NORMAL);
 
-    let normal_rect = Rect::new(0, 0, SPRITE_HEIGHT, SPRITE_WIDTH);
+    let normal_rect = Rect::new(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
 
     let default_switch_value = Some(0b1);
     let default_lamp_value = None;
@@ -217,6 +219,7 @@ fn main() -> Result<(), String> {
         lamp.texture,
         two_outputs_gate.texture,
     ];
+    let mut sprite_menuitems = vec![normal_rect; 8];
     let mut inputs_menuitems = vec![
         switch.inputs,
         and_gate.inputs,
@@ -298,13 +301,15 @@ fn main() -> Result<(), String> {
                             64,
                             64,
                         ) {
+                            // [TODO] maybe implement that newly created gates can have other dimensions on
+                            // the screen so they can have more than 3 inputs/outputs
                             moved_new = true;
                             gates.push(Gate::new(
                                 gatetypes_menuitems[element],
                                 gatenames_menuitems[element],
                                 Point::new(mouse_pos_x, mouse_pos_y),
                                 textures_menuitems[element],
-                                normal_rect,
+                                sprite_menuitems[element],
                                 inputs_menuitems[element],
                                 outputs_menuitems[element],
                                 functions_menuitems[element],
@@ -386,16 +391,36 @@ fn main() -> Result<(), String> {
                             ));
                         }
                     }
-                    if match_create_pos(&canvas, mouse_pos_x, mouse_pos_y, 50, 30) {
+
+                    if match_create_pos(&canvas, mouse_pos_x, mouse_pos_y, 50, 30)
+                        && positions_menuitems.len() < 11 + DEFAULT_LEN_MENUITEMS as usize
+                    {
                         new_gate = Gate::new(
                             GateType::Custom,
                             new_name(), // [TODO] add functionality
                             Point::new(
-                                positions_menuitems.last().unwrap().x() + 66,
+                                width as i32
+                                    - 38
+                                    - (positions_menuitems.len() as i32 - DEFAULT_LEN_MENUITEMS)
+                                        * 66,
                                 height as i32 - 38,
                             ),
                             &or_placeholder,
-                            normal_rect,
+                            {
+                                let mut i = 1;
+                                let max_connections = if count_occurences(&gates, GateType::Switch)
+                                    >= count_occurences(&gates, GateType::Lamp)
+                                {
+                                    count_occurences(&gates, GateType::Switch)
+                                } else {
+                                    count_occurences(&gates, GateType::Lamp)
+                                };
+
+                                while max_connections > 2usize.pow(i) + 1 {
+                                    i += 1;
+                                }
+                                Rect::new(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT * 2u32.pow(i - 1))
+                            },
                             count_occurences(&gates, GateType::Switch),
                             count_occurences(&gates, GateType::Lamp),
                             compressed_func(), // [TODO] add functionality
@@ -405,6 +430,7 @@ fn main() -> Result<(), String> {
                         gatenames_menuitems.push(new_gate.gatename);
                         positions_menuitems.push(new_gate.position);
                         textures_menuitems.push(new_gate.texture);
+                        sprite_menuitems.push(new_gate.sprite);
                         inputs_menuitems.push(new_gate.inputs);
                         outputs_menuitems.push(new_gate.outputs);
                         functions_menuitems.push(new_gate.comp_func);
@@ -585,7 +611,6 @@ fn main() -> Result<(), String> {
             &cables,
             &input_points,
             &output_points,
-            normal_rect,
         )?;
 
         // Time management!
