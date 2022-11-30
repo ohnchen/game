@@ -79,8 +79,9 @@ pub fn match_mouse_pos_con(
     gates: &[Gate],
     width: i32,
     height: i32,
-) -> (bool, usize, usize) {
+) -> (bool, usize, usize, usize) {
     let mut con_positions: Vec<(usize, Vec<Point>)> = Vec::new();
+    let mut output_pos_index = 0;
 
     if is_input {
         for (index, gate) in gates.iter().enumerate() {
@@ -88,6 +89,23 @@ pub fn match_mouse_pos_con(
         }
     } else {
         for (index, gate) in gates.iter().enumerate() {
+            if gate.output_positions().iter().any(|&x| {
+                mouse_pos_x > x.x() - height / 2
+                    && mouse_pos_x < x.x() + height / 2
+                    && mouse_pos_y < x.y() - width / 2
+                    && mouse_pos_y < x.y() + width / 2
+            }) {
+                output_pos_index = gate
+                    .output_positions()
+                    .iter()
+                    .position(|&x| {
+                        mouse_pos_x > x.x() - height / 2
+                            && mouse_pos_x < x.x() + height / 2
+                            && mouse_pos_y < x.y() - width / 2
+                            && mouse_pos_y < x.y() + width / 2
+                    })
+                    .unwrap();
+            }
             con_positions.push((index, gate.output_positions()));
         }
     }
@@ -103,12 +121,13 @@ pub fn match_mouse_pos_con(
                     true,
                     *index,
                     positions.iter().position(|&x| x == *pos).unwrap(),
+                    output_pos_index,
                 );
             }
         }
     }
 
-    (false, usize::MAX, usize::MAX)
+    (false, usize::MAX, usize::MAX, usize::MAX)
 }
 
 fn draw_connections(canvas: &mut WindowCanvas, position: Point) -> Result<(), String> {

@@ -23,7 +23,7 @@ pub struct Gate<'a> {
     pub sprite: Rect,
     pub inputs: usize,
     pub outputs: usize,
-    pub comp_func: fn(u64, usize) -> bool,
+    pub comp_func: fn(&[bool]) -> Vec<bool>,
     pub input_values: Option<u64>,
 }
 
@@ -37,7 +37,7 @@ impl<'a> Gate<'a> {
         sprite: Rect,
         inputs: usize,
         outputs: usize,
-        comp_func: fn(u64, usize) -> bool,
+        comp_func: fn(&[bool]) -> Vec<bool>,
         input_values: Option<u64>,
     ) -> Self {
         Self {
@@ -77,10 +77,30 @@ impl<'a> Gate<'a> {
         output_pos
     }
 
-    pub fn output_is_on(&self) -> bool {
+    pub fn output_is_on(&self) -> Vec<bool> {
         if self.input_values.is_some() {
-            return (self.comp_func)(self.input_values.unwrap(), self.inputs);
+            return (self.comp_func)(&Self::convert_u64_in_bools(
+                self.input_values.unwrap(),
+                self.inputs,
+            ));
         }
-        false
+        vec![false]
+    }
+
+    fn convert_u64_in_bools(input_u64: u64, input_count: usize) -> Vec<bool> {
+        let mut inputs = Vec::<bool>::new();
+        let input_bin = format!("{:b}", input_u64);
+        let mut initial_len = input_bin.len();
+
+        while initial_len < input_count {
+            inputs.push(false);
+            initial_len += 1;
+        }
+
+        for bin in input_bin.chars() {
+            inputs.push(bin == '1');
+        }
+
+        inputs
     }
 }

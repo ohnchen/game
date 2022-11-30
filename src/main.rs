@@ -150,10 +150,28 @@ fn main() -> Result<(), String> {
         switch_lamp_func,
         default_lamp_value,
     );
+    let two_outputs_gate = Gate::new(
+        GateType::Not,
+        "ADD",
+        Point::new(38 + 7 * 66, height as i32 - 38),
+        &not_placeholder,
+        normal_rect,
+        3,
+        2,
+        add_func,
+        default_value,
+    );
 
     // Create lists for the menuitems
     let gates_menuitems = vec![
-        &switch, &and_gate, &or_gate, &nand_gate, &xor_gate, &not_gate, &lamp,
+        &switch,
+        &and_gate,
+        &or_gate,
+        &nand_gate,
+        &xor_gate,
+        &not_gate,
+        &lamp,
+        &two_outputs_gate,
     ];
     let gatetypes_menuitems = vec![
         switch.gatetype,
@@ -163,6 +181,7 @@ fn main() -> Result<(), String> {
         xor_gate.gatetype,
         not_gate.gatetype,
         lamp.gatetype,
+        two_outputs_gate.gatetype,
     ];
     let gatenames_menuitems = vec![
         switch.gatename,
@@ -172,6 +191,7 @@ fn main() -> Result<(), String> {
         xor_gate.gatename,
         not_gate.gatename,
         lamp.gatename,
+        two_outputs_gate.gatename,
     ];
     let positions_menuitems = vec![
         switch.position,
@@ -181,6 +201,7 @@ fn main() -> Result<(), String> {
         xor_gate.position,
         not_gate.position,
         lamp.position,
+        two_outputs_gate.position,
     ];
     let textures_menuitems = vec![
         switch.texture,
@@ -190,6 +211,7 @@ fn main() -> Result<(), String> {
         xor_gate.texture,
         not_gate.texture,
         lamp.texture,
+        two_outputs_gate.texture,
     ];
     let inputs_menuitems = vec![
         switch.inputs,
@@ -199,6 +221,7 @@ fn main() -> Result<(), String> {
         xor_gate.inputs,
         not_gate.inputs,
         lamp.inputs,
+        two_outputs_gate.inputs,
     ];
     let outputs_menuitems = vec![
         switch.outputs,
@@ -208,6 +231,7 @@ fn main() -> Result<(), String> {
         xor_gate.outputs,
         not_gate.outputs,
         lamp.outputs,
+        two_outputs_gate.outputs,
     ];
     let functions_menuitems = vec![
         switch.comp_func,
@@ -217,6 +241,7 @@ fn main() -> Result<(), String> {
         xor_gate.comp_func,
         not_gate.comp_func,
         lamp.comp_func,
+        two_outputs_gate.comp_func,
     ];
     let input_values_menuitems = vec![
         switch.input_values,
@@ -226,6 +251,7 @@ fn main() -> Result<(), String> {
         xor_gate.input_values,
         not_gate.input_values,
         lamp.input_values,
+        two_outputs_gate.input_values,
     ];
 
     canvas.set_draw_color(JET);
@@ -295,7 +321,7 @@ fn main() -> Result<(), String> {
                             moved_old_index = element;
                         }
                     }
-                    let (is_hit, gate, element) = drawing::match_mouse_pos_con(
+                    let (is_hit, gate, element, output_pos) = drawing::match_mouse_pos_con(
                         mouse_pos_x,
                         mouse_pos_y,
                         false,
@@ -304,9 +330,7 @@ fn main() -> Result<(), String> {
                         16,
                     );
                     if is_hit {
-                        // [TODO] more than 1 output are not possible, that is needed for storing
-                        // custom gates
-                        cable_is_on = gates[gate].output_is_on();
+                        cable_is_on = gates[gate].output_is_on()[output_pos];
                         start_point_cable = gates[gate].output_positions()[element];
                     }
                 }
@@ -316,7 +340,7 @@ fn main() -> Result<(), String> {
                 } => {
                     moved_new = false;
                     moved_old = false;
-                    let (is_hit, gate, element) = drawing::match_mouse_pos_con(
+                    let (is_hit, gate, element, _) = drawing::match_mouse_pos_con(
                         mouse_pos_x,
                         mouse_pos_y,
                         true,
@@ -354,7 +378,9 @@ fn main() -> Result<(), String> {
                                     })
                                     .unwrap(),
                             );
-                        } else if start_point_cable != end_point_cable {
+                        } else if start_point_cable != end_point_cable
+                            && !cables.iter().any(|&x| x.end_point == end_point_cable)
+                        {
                             cables.push(Cable::new(
                                 cable_is_on,
                                 start_point_cable,
@@ -415,7 +441,7 @@ fn main() -> Result<(), String> {
                         64,
                     );
                     if is_hit && gates[element].gatetype == GateType::Switch {
-                        if gates[element].output_is_on() {
+                        if gates[element].output_is_on()[0] {
                             gates[element].input_values = Some(0);
                             gates[element].texture = &and_placeholder;
                         } else {
@@ -482,7 +508,7 @@ fn main() -> Result<(), String> {
         let old_cables = cables.clone();
 
         for (cable, gate, index) in indices_start {
-            cables[cable].state = if gates[gate].output_is_on() {
+            cables[cable].state = if gates[gate].output_is_on()[index] {
                 State::On
             } else {
                 State::Off
@@ -505,7 +531,7 @@ fn main() -> Result<(), String> {
             }
 
             if gates[gate].gatetype == GateType::Lamp {
-                if gates[gate].output_is_on() {
+                if gates[gate].output_is_on()[0] {
                     gates[gate].texture = &switch_texture;
                 } else {
                     gates[gate].texture = &and_placeholder;

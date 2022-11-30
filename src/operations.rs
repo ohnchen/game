@@ -1,47 +1,41 @@
-pub fn switch_lamp_func(inputs: u64, _: usize) -> bool {
-    inputs != 0
+const SINGLE_OUTPUT: usize = 0;
+
+pub fn switch_lamp_func(inputs: &[bool]) -> Vec<bool> {
+    vec![inputs[0]]
 }
 
-pub fn and_func(inputs: u64, num_of_inputs: usize) -> bool {
-    let mut temp = 1;
-    let inputs_bin = format!("{:b}", inputs);
-
-    while temp <= inputs {
-        temp *= 2;
+pub fn and_func(inputs: &[bool]) -> Vec<bool> {
+    if inputs.iter().all(|&x| x) {
+        return vec![true];
     }
-
-    if inputs_bin.len() < num_of_inputs {
-        return false;
-    }
-
-    if inputs != 0 && inputs & (temp - 1) == (temp - 1) {
-        return true;
-    }
-
-    false
+    vec![false]
 }
 
-pub fn or_func(inputs: u64, _: usize) -> bool {
-    if inputs == 0 {
-        return false;
+pub fn or_func(inputs: &[bool]) -> Vec<bool> {
+    if inputs.iter().all(|&x| !x) {
+        return vec![false];
     }
-    true
+    vec![true]
 }
 
-pub fn not_func(inputs: u64, _: usize) -> bool {
-    if inputs == 0 {
-        return true;
+pub fn not_func(inputs: &[bool]) -> Vec<bool> {
+    if inputs.iter().all(|&x| !x) {
+        return vec![true];
     }
-    false
+    vec![false]
 }
 
-pub fn nand_func(inputs: u64, num_of_inputs: usize) -> bool {
-    !and_func(inputs, num_of_inputs)
+pub fn nand_func(inputs: &[bool]) -> Vec<bool> {
+    vec![!and_func(inputs)[SINGLE_OUTPUT]]
 }
 
-pub fn xor_func(inputs: u64, num_of_inputs: usize) -> bool {
-    if and_func(inputs, num_of_inputs) || inputs == 0 {
-        return false;
+pub fn xor_func(inputs: &[bool]) -> Vec<bool> {
+    if and_func(inputs)[SINGLE_OUTPUT] || inputs.iter().all(|&x| !x) {
+        return vec![false];
     }
-    true
+    vec![true]
+}
+
+pub fn add_func(_inputs: &[bool]) -> Vec<bool> {
+    vec![false, true]
 }
