@@ -3,7 +3,7 @@ use crate::gate::Gate;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
-use sdl2::render::{TextureCreator, WindowCanvas};
+use sdl2::render::{Texture, TextureCreator, WindowCanvas};
 use sdl2::ttf::Font;
 use sdl2::video::WindowContext;
 
@@ -17,7 +17,9 @@ pub const SNOW: Color = Color::RGB(255, 250, 251);
 pub fn render(
     canvas: &mut WindowCanvas,
     font: &Font,
-    gates_menu: &[&Gate],
+    positions_menu: &[Point],
+    gatenames_menu: &[&str],
+    textures_menu: &[&Texture],
     gates: &[Gate],
     cables: &[Cable],
     inputs: &[Point],
@@ -29,7 +31,15 @@ pub fn render(
     let texture_creator = canvas.texture_creator();
 
     for gate in gates.iter() {
-        draw_sprite(canvas, font, &texture_creator, *gate, sprite)?;
+        draw_sprite(
+            canvas,
+            font,
+            &texture_creator,
+            gate.position,
+            gate.gatename.to_string(),
+            gate.texture,
+            sprite,
+        )?;
     }
 
     for cable in cables.iter() {
@@ -39,8 +49,16 @@ pub fn render(
     draw_create_button(canvas, font, &texture_creator)?;
     draw_menu_background(canvas)?;
 
-    for gate in gates_menu.iter() {
-        draw_sprite(canvas, font, &texture_creator, **gate, sprite)?;
+    for gate in 0..positions_menu.len() {
+        draw_sprite(
+            canvas,
+            font,
+            &texture_creator,
+            positions_menu[gate],
+            gatenames_menu[gate].to_string(),
+            textures_menu[gate],
+            sprite,
+        )?;
     }
 
     for input in inputs.iter() {
@@ -227,13 +245,15 @@ fn draw_sprite(
     canvas: &mut WindowCanvas,
     font: &Font,
     texture_creator: &TextureCreator<WindowContext>,
-    gate: Gate,
+    position: Point,
+    gatename: String,
+    texture: &Texture,
     sprite: Rect,
 ) -> Result<(), String> {
-    let screen_rect = Rect::from_center(gate.position, sprite.width(), sprite.height());
-    let font_rect = Rect::from_center(gate.position, sprite.width() / 2, sprite.height() / 2);
+    let screen_rect = Rect::from_center(position, sprite.width(), sprite.height());
+    let font_rect = Rect::from_center(position, sprite.width() / 2, sprite.height() / 2);
 
-    let text = gate.gatename.to_string();
+    let text = gatename.to_string();
     let surface = font
         .render(&text)
         .blended(SNOW)
@@ -243,7 +263,7 @@ fn draw_sprite(
         .create_texture_from_surface(&surface)
         .map_err(|e| e.to_string())?;
 
-    canvas.copy(gate.texture, None, screen_rect)?;
+    canvas.copy(texture, None, screen_rect)?;
     canvas.copy(&text, None, font_rect)?;
 
     Ok(())

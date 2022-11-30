@@ -30,6 +30,18 @@ fn positions(gates: &[Gate]) -> Vec<Point> {
     gates.iter().map(|x| x.position).collect()
 }
 
+fn new_name() -> &'static str {
+    "I"
+}
+
+fn count_occurences(gates: &[Gate], gatetype: GateType) -> usize {
+    gates.iter().filter(|&x| x.gatetype == gatetype).count()
+}
+
+fn compressed_func() -> fn(&[bool]) -> Vec<bool> {
+    and_func
+}
+
 fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
@@ -73,6 +85,8 @@ fn main() -> Result<(), String> {
     let default_switch_value = Some(0b1);
     let default_lamp_value = None;
     let default_value = None;
+
+    let mut new_gate: Gate;
 
     let switch = Gate::new(
         GateType::Switch,
@@ -163,18 +177,7 @@ fn main() -> Result<(), String> {
         default_value,
     );
 
-    // Create lists for the menuitems
-    let gates_menuitems = vec![
-        &switch,
-        &and_gate,
-        &or_gate,
-        &nand_gate,
-        &xor_gate,
-        &not_gate,
-        &lamp,
-        &two_outputs_gate,
-    ];
-    let gatetypes_menuitems = vec![
+    let mut gatetypes_menuitems = vec![
         switch.gatetype,
         and_gate.gatetype,
         or_gate.gatetype,
@@ -184,7 +187,7 @@ fn main() -> Result<(), String> {
         lamp.gatetype,
         two_outputs_gate.gatetype,
     ];
-    let gatenames_menuitems = vec![
+    let mut gatenames_menuitems = vec![
         switch.gatename,
         and_gate.gatename,
         or_gate.gatename,
@@ -194,7 +197,7 @@ fn main() -> Result<(), String> {
         lamp.gatename,
         two_outputs_gate.gatename,
     ];
-    let positions_menuitems = vec![
+    let mut positions_menuitems = vec![
         switch.position,
         and_gate.position,
         or_gate.position,
@@ -204,7 +207,7 @@ fn main() -> Result<(), String> {
         lamp.position,
         two_outputs_gate.position,
     ];
-    let textures_menuitems = vec![
+    let mut textures_menuitems = vec![
         switch.texture,
         and_gate.texture,
         or_gate.texture,
@@ -214,7 +217,7 @@ fn main() -> Result<(), String> {
         lamp.texture,
         two_outputs_gate.texture,
     ];
-    let inputs_menuitems = vec![
+    let mut inputs_menuitems = vec![
         switch.inputs,
         and_gate.inputs,
         or_gate.inputs,
@@ -224,7 +227,7 @@ fn main() -> Result<(), String> {
         lamp.inputs,
         two_outputs_gate.inputs,
     ];
-    let outputs_menuitems = vec![
+    let mut outputs_menuitems = vec![
         switch.outputs,
         and_gate.outputs,
         or_gate.outputs,
@@ -234,7 +237,7 @@ fn main() -> Result<(), String> {
         lamp.outputs,
         two_outputs_gate.outputs,
     ];
-    let functions_menuitems = vec![
+    let mut functions_menuitems = vec![
         switch.comp_func,
         and_gate.comp_func,
         or_gate.comp_func,
@@ -244,7 +247,7 @@ fn main() -> Result<(), String> {
         lamp.comp_func,
         two_outputs_gate.comp_func,
     ];
-    let input_values_menuitems = vec![
+    let mut input_values_menuitems = vec![
         switch.input_values,
         and_gate.input_values,
         or_gate.input_values,
@@ -384,7 +387,28 @@ fn main() -> Result<(), String> {
                         }
                     }
                     if match_create_pos(&canvas, mouse_pos_x, mouse_pos_y, 50, 30) {
-                        println!("hit");
+                        new_gate = Gate::new(
+                            GateType::Custom,
+                            new_name(), // [TODO] add functionality
+                            Point::new(
+                                positions_menuitems.last().unwrap().x() + 66,
+                                height as i32 - 38,
+                            ),
+                            &or_placeholder,
+                            normal_rect,
+                            count_occurences(&gates, GateType::Switch),
+                            count_occurences(&gates, GateType::Lamp),
+                            compressed_func(), // [TODO] add functionality
+                            None,
+                        );
+                        gatetypes_menuitems.push(new_gate.gatetype);
+                        gatenames_menuitems.push(new_gate.gatename);
+                        positions_menuitems.push(new_gate.position);
+                        textures_menuitems.push(new_gate.texture);
+                        inputs_menuitems.push(new_gate.inputs);
+                        outputs_menuitems.push(new_gate.outputs);
+                        functions_menuitems.push(new_gate.comp_func);
+                        input_values_menuitems.push(new_gate.input_values);
                     }
                 }
                 Event::MouseButtonDown {
@@ -554,7 +578,9 @@ fn main() -> Result<(), String> {
         drawing::render(
             &mut canvas,
             &font,
-            &gates_menuitems,
+            &positions_menuitems,
+            &gatenames_menuitems,
+            &textures_menuitems,
             &gates,
             &cables,
             &input_points,
