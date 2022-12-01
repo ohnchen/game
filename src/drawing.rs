@@ -254,7 +254,7 @@ fn draw_sprite(
     let screen_rect = Rect::from_center(position, sprite.width(), sprite.height());
     let font_rect = Rect::from_center(position, 32, 32);
 
-    let text = gatename.to_string();
+    let text = gatename;
     let surface = font
         .render(&text)
         .blended(SNOW)
