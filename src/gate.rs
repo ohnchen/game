@@ -1,6 +1,8 @@
 use sdl2::rect::{Point, Rect};
 use sdl2::render::Texture;
 
+const OFFSET: i32 = 8;
+
 #[allow(dead_code)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum GateType {
@@ -58,8 +60,9 @@ impl<'a> Gate<'a> {
         for i in 1..self.inputs + 1 {
             input_pos.push(Point::new(
                 self.position.x() - self.sprite.width() as i32 / 2,
-                self.position.y() as i32 - ((self.sprite.height() as i32 + 8) / 2)
-                    + i as i32 * ((self.sprite.height() as i32 + 8) / (self.inputs as i32 + 1)),
+                self.position.y() as i32 - ((self.sprite.height() as i32 + OFFSET) / 2)
+                    + i as i32
+                        * ((self.sprite.height() as i32 + OFFSET) / (self.inputs as i32 + 1)),
             ));
         }
         input_pos
@@ -70,8 +73,9 @@ impl<'a> Gate<'a> {
         for i in 1..self.outputs + 1 {
             output_pos.push(Point::new(
                 self.position.x() + self.sprite.width() as i32 / 2,
-                self.position.y() as i32 - ((self.sprite.height() as i32 + 8) / 2)
-                    + i as i32 * ((self.sprite.height() as i32 + 8) / (self.outputs as i32 + 1)),
+                self.position.y() as i32 - ((self.sprite.height() as i32 + OFFSET) / 2)
+                    + i as i32
+                        * ((self.sprite.height() as i32 + OFFSET) / (self.outputs as i32 + 1)),
             ));
         }
         output_pos
@@ -88,19 +92,20 @@ impl<'a> Gate<'a> {
     }
 
     fn convert_u64_in_bools(input_u64: u64, input_count: usize) -> Vec<bool> {
-        let mut inputs = Vec::<bool>::new();
+        let mut input_vec = Vec::<bool>::new();
+
         let input_bin = format!("{:b}", input_u64);
         let mut initial_len = input_bin.len();
 
         while initial_len < input_count {
-            inputs.push(false);
+            input_vec.push(false);
             initial_len += 1;
         }
 
         for bin in input_bin.chars() {
-            inputs.push(bin == '1');
+            input_vec.push(bin == '1');
         }
 
-        inputs
+        input_vec
     }
 }
