@@ -1,8 +1,6 @@
 <h1 align="center">logic.sim</h1>
 
-<p align="center">
 This is a small logic gate simulator for experimenting with how logic gates work. I only tested it on Ubuntu 22.04. For it to work you need to have a few sdl2-dependencies installed: libsdl2-dev libsdl2-ttx-dev libsdl2-image-dev libsdl2-gfx-dev  
-</p>
 
 ## Screenshots
 
