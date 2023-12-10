@@ -13,6 +13,7 @@ $ cd logic.sim
 ### Install dependencies:
 ```console
 $ sudo apt install libsdl2-dev libsdl2-ttx-dev libsdl2-image-dev libsdl2-gfx-dev
+$ sudo pacman -S sdl2 sdl2t_ttf sdl2_image sdl2_gfx
 ```
 
 
